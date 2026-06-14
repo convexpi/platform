@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Next.js
+web/node_modules/
+web/.next/
+web/.vercel/
+web/.env.local
+web/.env.*.local
