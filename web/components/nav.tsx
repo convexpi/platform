@@ -28,7 +28,8 @@ function ConvexPiLogo({ showWordmark = true }: { showWordmark?: boolean }) {
         <text
           x="30"
           y="37"
-          className="fill-[#60a5fa] font-serif"
+          fill="#C9A34E"
+          className="font-serif"
           fontSize="30"
           fontWeight="700"
         >
@@ -37,26 +38,28 @@ function ConvexPiLogo({ showWordmark = true }: { showWordmark?: boolean }) {
         <path
           d="M12 45.5h62"
           fill="none"
-          stroke="#60a5fa"
+          stroke="#0B1F3A"
           strokeWidth="1.8"
           strokeLinecap="round"
+          opacity="0.25"
         />
         <path
           d="M17 44.5c13.1-.3 24.5-3.1 34-10.5 8-6.2 13.9-14.2 18.7-25.7"
           fill="none"
-          stroke="#60a5fa"
+          stroke="#0B1F3A"
           strokeWidth="2"
           strokeLinecap="round"
+          opacity="0.3"
         />
         <path
           d="M69.8 8.4v37.1"
           fill="none"
-          stroke="#94a3b8"
+          stroke="#0B1F3A"
           strokeWidth="1"
           strokeLinecap="round"
-          opacity="0.55"
+          opacity="0.2"
         />
-        <circle cx="69.8" cy="8.4" r="4.2" fill="#d4af37" />
+        <circle cx="69.8" cy="8.4" r="4.2" fill="#C9A34E" />
       </svg>
       {showWordmark && (
         <span className="font-serif text-xl leading-none text-foreground">
