@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { MissionProgress } from '@/components/mission-progress'
 import type { Cohort } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -11,6 +12,8 @@ export default async function Dashboard() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const completedMissions: string[] = (user.user_metadata?.completed_missions ?? [])
 
   const { data: memberships } = await supabase
     .from('cohort_members')
@@ -29,40 +32,46 @@ export default async function Dashboard() {
   return (
     <div className="container mx-auto px-4 py-10">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
         <div className="flex gap-2">
           <Link href="/classroom/new"><Button variant="outline" size="sm">+ New classroom</Button></Link>
           <Link href="/compete"><Button size="sm">Browse competitions</Button></Link>
         </div>
       </div>
 
-      {classrooms.length > 0 && (
-        <section className="mb-10">
-          <h2 className="text-lg font-semibold mb-4">My classrooms</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            {classrooms.map(c => <CohortCard key={c.id} cohort={c} />)}
-          </div>
-        </section>
-      )}
-
-      {competitions.length > 0 && (
-        <section className="mb-10">
-          <h2 className="text-lg font-semibold mb-4">My competitions</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            {competitions.map(c => <CohortCard key={c.id} cohort={c} />)}
-          </div>
-        </section>
-      )}
-
-      {cohorts.length === 0 && (
-        <div className="text-center py-24 text-muted-foreground">
-          <p className="text-lg mb-4">You haven't joined any cohorts yet.</p>
-          <div className="flex gap-3 justify-center">
-            <Link href="/compete"><Button>Browse competitions</Button></Link>
-            <Link href="/classroom/new"><Button variant="outline">Create classroom</Button></Link>
-          </div>
+      <div className="grid lg:grid-cols-[1fr_280px] gap-6 mb-10">
+        <div>
+          {classrooms.length > 0 && (
+            <section className="mb-8">
+              <h2 className="text-sm font-medium tracking-widest text-muted-foreground uppercase mb-3">Classrooms</h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                {classrooms.map(c => <CohortCard key={c.id} cohort={c} />)}
+              </div>
+            </section>
+          )}
+          {competitions.length > 0 && (
+            <section className="mb-8">
+              <h2 className="text-sm font-medium tracking-widest text-muted-foreground uppercase mb-3">Competitions</h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                {competitions.map(c => <CohortCard key={c.id} cohort={c} />)}
+              </div>
+            </section>
+          )}
+          {cohorts.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              <p className="text-lg mb-4">You haven&apos;t joined any cohorts yet.</p>
+              <div className="flex gap-3 justify-center">
+                <Link href="/compete"><Button>Browse competitions</Button></Link>
+                <Link href="/classroom/new"><Button variant="outline">Create classroom</Button></Link>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+        <div>
+          <MissionProgress initialCompleted={completedMissions} />
+        </div>
+      </div>
+
     </div>
   )
 }
