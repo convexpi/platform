@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { cohortId, strategyName, code } = body
+  const { cohortId, strategyName, code, githubUrl } = body
 
   if (!cohortId || !strategyName || !code) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -68,7 +68,13 @@ export async function POST(request: Request) {
 
   const { data: submission, error } = await supabase
     .from('submissions')
-    .insert({ cohort_id: cohortId, user_id: user.id, strategy_name: strategyName, code })
+    .insert({
+      cohort_id: cohortId,
+      user_id: user.id,
+      strategy_name: strategyName,
+      code,
+      ...(githubUrl ? { github_url: githubUrl } : {}),
+    })
     .select()
     .single()
 

@@ -13,6 +13,8 @@ type Profile = {
   display_name: string | null
   university: string | null
   bio: string | null
+  github_username: string | null
+  website_url: string | null
 }
 
 export function ProfileEditForm({ profile }: { profile: Profile }) {
@@ -22,6 +24,8 @@ export function ProfileEditForm({ profile }: { profile: Profile }) {
   const [displayName, setDisplayName] = useState(profile.display_name ?? '')
   const [university, setUniversity] = useState(profile.university ?? '')
   const [bio, setBio] = useState(profile.bio ?? '')
+  const [githubUsername, setGithubUsername] = useState(profile.github_username ?? '')
+  const [websiteUrl, setWebsiteUrl] = useState(profile.website_url ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,9 +40,11 @@ export function ProfileEditForm({ profile }: { profile: Profile }) {
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
-        display_name: displayName.trim() || null,
-        university:   university.trim()   || null,
-        bio:          bio.trim()          || null,
+        display_name:    displayName.trim()    || null,
+        university:      university.trim()     || null,
+        bio:             bio.trim()            || null,
+        github_username: githubUsername.trim() || null,
+        website_url:     websiteUrl.trim()     || null,
       })
       .eq('id', user.id)
 
@@ -91,6 +97,38 @@ export function ProfileEditForm({ profile }: { profile: Profile }) {
           className="resize-none"
         />
         <p className="text-xs text-muted-foreground">{bio.length}/280</p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="github_username">GitHub username</Label>
+        <div className="flex items-center">
+          <span className="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 bg-muted text-muted-foreground text-sm">
+            github.com/
+          </span>
+          <Input
+            id="github_username"
+            value={githubUsername}
+            onChange={e => setGithubUsername(e.target.value)}
+            placeholder="yourusername"
+            maxLength={39}
+            className="rounded-l-none"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Shown on your profile so others can find your public research code.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="website_url">Website</Label>
+        <Input
+          id="website_url"
+          type="url"
+          value={websiteUrl}
+          onChange={e => setWebsiteUrl(e.target.value)}
+          placeholder="https://yoursite.com"
+          maxLength={200}
+        />
       </div>
 
       {error && (

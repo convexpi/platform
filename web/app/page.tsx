@@ -141,23 +141,27 @@ export default async function Home() {
             {/* Research */}
             <div>
               <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-5">
-                Research
+                Research Library
               </p>
               <div className="flex flex-col divide-y divide-border">
                 {[
-                  'Overfitting in Cross-Sectional Equity Signals',
-                  'Hidden Holdout Evaluation Framework',
-                  'Factor Zoo Decay: 2000–2024',
-                  'Reinforcement Learning Market Makers',
-                ].map(title => (
-                  <div key={title} className="py-3">
-                    <p className="text-sm text-foreground leading-snug">{title}</p>
+                  { title: 'Momentum', href: '/research/momentum', note: 'Strong OOS survival' },
+                  { title: 'Value', href: '/research/value', note: 'Mixed OOS evidence' },
+                  { title: 'Quality / Profitability', href: '/research/quality', note: 'Strong OOS survival' },
+                  { title: 'Factor Zoo & Replication Crisis', href: '/research/factor-zoo', note: 'Why most factors fail' },
+                ].map(item => (
+                  <div key={item.href} className="py-3">
+                    <Link href={item.href}
+                      className="text-sm text-foreground font-medium leading-snug hover:text-primary transition-colors">
+                      {item.title}
+                    </Link>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.note}</p>
                   </div>
                 ))}
                 <div className="pt-4">
-                  <Link href="/anomalies"
+                  <Link href="/research"
                     className="text-xs font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
-                    Anomaly tracker →
+                    Full research library →
                   </Link>
                 </div>
               </div>
@@ -459,6 +463,53 @@ export default async function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Community ─────────────────────────────────────────────────── */}
+      <section className="border-b border-border">
+        <div className="container mx-auto px-4 py-20">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
+                Community
+              </p>
+              <h2 className="font-serif text-3xl text-foreground mb-5 leading-snug">
+                Build in the open. Follow the research.
+              </h2>
+              <p className="text-muted-foreground leading-relaxed mb-6">
+                Every submission is graded and published to a public leaderboard.
+                Follow other researchers to see their strategy results in your feed.
+                Share your GitHub to let others learn from your code.
+              </p>
+              <div className="flex gap-3">
+                <Link href="/community">
+                  <Button className="bg-[#0B1F3A] hover:bg-[#0B1F3A]/90 text-white">
+                    Browse researchers
+                  </Button>
+                </Link>
+                <Link href="/research">
+                  <Button variant="outline">Research library</Button>
+                </Link>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              {[
+                { label: 'Follow researchers', desc: 'See their submissions and OOS Sharpe scores in your activity feed.' },
+                { label: 'Link your GitHub', desc: 'Share your strategy code publicly so others can learn from your approach.' },
+                { label: 'Research library', desc: '8 factor deep-dives with key papers, OOS survival evidence, and platform missions.' },
+                { label: 'Anomaly tracker', desc: 'Pre- and post-publication Sharpe ratios for canonical equity anomalies.' },
+              ].map(item => (
+                <div key={item.label} className="flex items-start gap-3 p-3 rounded-lg border bg-card/40">
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{item.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

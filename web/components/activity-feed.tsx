@@ -1,0 +1,137 @@
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+
+type ActivityRow = {
+  id: string
+  strategy_name: string
+  submitted_at: string
+  oos_sharpe: number | null
+  cohort_name: string | null
+  cohort_slug: string | null
+  cohort_type: string | null
+  username: string | null
+  display_name: string | null
+}
+
+export async function ActivityFeed({ followingIds }: { followingIds?: string[] }) {
+  const supabase = await createClient()
+
+  let query = supabase
+    .from('submissions')
+    .select(`
+      id,
+      strategy_name,
+      submitted_at,
+      grade_reports(oos_sharpe),
+      cohorts!inner(name, slug, type, visibility),
+      profiles!inner(username, display_name)
+    `)
+    .eq('status', 'completed')
+    .order('submitted_at', { ascending: false })
+    .limit(20)
+
+  if (followingIds && followingIds.length > 0) {
+    query = query.in('user_id', followingIds)
+  }
+
+  const { data: submissions } = await query
+
+  type Row = {
+    id: string; strategy_name: string; submitted_at: string
+    grade_reports: { oos_sharpe: number | null }[] | { oos_sharpe: number | null } | null
+    cohorts: { name: string; slug: string; type: string; visibility: string } | null
+    profiles: { username: string; display_name: string | null } | null
+  }
+
+  const rows = (submissions ?? []) as unknown as Row[]
+
+  const activity: ActivityRow[] = rows
+    .filter(r => r.cohorts?.visibility !== 'private')
+    .map(r => {
+      const gr = Array.isArray(r.grade_reports) ? r.grade_reports[0] : r.grade_reports
+      return {
+        id: r.id,
+        strategy_name: r.strategy_name,
+        submitted_at: r.submitted_at,
+        oos_sharpe: gr?.oos_sharpe ?? null,
+        cohort_name: r.cohorts?.name ?? null,
+        cohort_slug: r.cohorts?.slug ?? null,
+        cohort_type: r.cohorts?.type ?? null,
+        username: r.profiles?.username ?? null,
+        display_name: r.profiles?.display_name ?? null,
+      }
+    })
+
+  if (activity.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-4">
+        {followingIds && followingIds.length > 0
+          ? 'No recent activity from researchers you follow.'
+          : 'No recent public submissions.'}
+      </p>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {activity.map(a => {
+        const base = a.cohort_type === 'competition' ? '/compete' : '/classroom'
+        const sharpeColor = a.oos_sharpe == null ? 'text-muted-foreground'
+          : a.oos_sharpe > 0 ? 'text-[#14b8a6]' : 'text-red-400'
+        const timeAgo = formatTimeAgo(a.submitted_at)
+
+        return (
+          <div key={a.id} className="flex items-center gap-3 py-2.5 border-b last:border-b-0">
+            {a.username && (
+              <Link href={`/profile/${a.username}`}
+                className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-xs font-semibold text-primary shrink-0 hover:bg-primary/25 transition-colors">
+                {(a.display_name ?? a.username)[0].toUpperCase()}
+              </Link>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-foreground leading-relaxed">
+                {a.username && (
+                  <Link href={`/profile/${a.username}`}
+                    className="font-medium hover:text-primary transition-colors">
+                    {a.display_name ?? a.username}
+                  </Link>
+                )}{' '}
+                submitted{' '}
+                <span className="font-medium">{a.strategy_name}</span>
+                {a.cohort_slug && (
+                  <>
+                    {' '}to{' '}
+                    <Link href={`${base}/${a.cohort_slug}`}
+                      className="hover:text-primary transition-colors underline underline-offset-4">
+                      {a.cohort_name}
+                    </Link>
+                  </>
+                )}
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              {a.oos_sharpe != null && (
+                <p className={`text-xs font-mono font-semibold ${sharpeColor}`}>
+                  {a.oos_sharpe > 0 ? '+' : ''}{a.oos_sharpe.toFixed(2)}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">{timeAgo}</p>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function formatTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins  = Math.floor(diff / 60_000)
+  const hours = Math.floor(diff / 3_600_000)
+  const days  = Math.floor(diff / 86_400_000)
+  if (mins < 2)   return 'just now'
+  if (mins < 60)  return `${mins}m ago`
+  if (hours < 24) return `${hours}h ago`
+  if (days < 7)   return `${days}d ago`
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
