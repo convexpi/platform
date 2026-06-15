@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Menu } from 'lucide-react'
@@ -11,61 +12,17 @@ import type { User } from '@supabase/supabase-js'
 
 function ConvexPiLogo({ showWordmark = true }: { showWordmark?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-2.5">
-      <svg
+    <span className="inline-flex items-center overflow-hidden rounded-sm bg-[#fcfaf9]">
+      <Image
+        src={showWordmark ? '/convexpi-logo.png' : '/convexpi-mark.png'}
+        alt=""
         aria-hidden="true"
-        viewBox="0 0 84 54"
-        className="h-9 w-14 shrink-0 overflow-visible"
-      >
-        <path
-          d="M52.5 10.5c-5.1-4.2-12-6.2-20.7-5.9C17.2 5.1 7.7 14.9 7.7 28.9c0 13.1 9.1 21.6 22.7 21.6 8.4 0 15.6-2.8 21.5-8.4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="8"
-          strokeLinecap="round"
-          className="text-foreground"
-        />
-        <text
-          x="30"
-          y="37"
-          fill="#C9A34E"
-          className="font-serif"
-          fontSize="30"
-          fontWeight="700"
-        >
-          π
-        </text>
-        <path
-          d="M12 45.5h62"
-          fill="none"
-          stroke="#0B1F3A"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          opacity="0.25"
-        />
-        <path
-          d="M17 44.5c13.1-.3 24.5-3.1 34-10.5 8-6.2 13.9-14.2 18.7-25.7"
-          fill="none"
-          stroke="#0B1F3A"
-          strokeWidth="2"
-          strokeLinecap="round"
-          opacity="0.3"
-        />
-        <path
-          d="M69.8 8.4v37.1"
-          fill="none"
-          stroke="#0B1F3A"
-          strokeWidth="1"
-          strokeLinecap="round"
-          opacity="0.2"
-        />
-        <circle cx="69.8" cy="8.4" r="4.2" fill="#C9A34E" />
-      </svg>
-      {showWordmark && (
-        <span className="font-serif text-xl leading-none text-foreground">
-          ConvexPi
-        </span>
-      )}
+        width={showWordmark ? 608 : 246}
+        height={204}
+        className={showWordmark ? 'h-10 w-auto' : 'h-10 w-auto'}
+        priority
+      />
+      <span className="sr-only">ConvexPi</span>
     </span>
   )
 }
