@@ -42,14 +42,13 @@ export default async function Home() {
     .eq('type', 'competition')
     .eq('visibility', 'public')
     .order('created_at', { ascending: false })
-    .limit(3)
+    .limit(4)
 
-  // Fetch demo leaderboard rows for the homepage illustration
   const { data: demoRows } = await supabase
     .from('grade_reports')
     .select('is_sharpe, oos_sharpe, overfitting_ratio, submissions(strategy_name)')
     .order('oos_sharpe', { ascending: false })
-    .limit(6)
+    .limit(5)
 
   const demoLeaderboard = (demoRows ?? []) as unknown as GradeReport[]
 
@@ -57,199 +56,315 @@ export default async function Home() {
     <div className="flex flex-col">
 
       {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
-        <div className="container mx-auto px-4 py-24 lg:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="flex flex-col gap-6 max-w-xl">
-              <p className="text-sm font-medium tracking-widest text-[#3b82f6] uppercase">
-                Experiment · Evaluate · Excel
+      <section className="border-b border-border">
+        <div className="container mx-auto px-4 py-20 lg:py-28">
+          <div className="grid lg:grid-cols-[1fr_480px] gap-16 items-center">
+            <div className="flex flex-col gap-7 max-w-2xl">
+              <p className="text-xs font-semibold tracking-[0.2em] text-[#C9A34E] uppercase">
+                Quantitative Finance · Experimental Method
               </p>
-              <h1 className="font-serif text-5xl lg:text-6xl leading-[1.1] text-foreground">
-                Learn Quantitative Finance Through Experimentation
+              <h1 className="font-serif text-5xl lg:text-6xl xl:text-7xl leading-[1.05] text-foreground">
+                Discover what survives{' '}
+                <span className="italic">out&#8209;of&#8209;sample.</span>
               </h1>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Build trading strategies. Test them against hidden out-of-sample data.
-                Compete in live market simulations.
+              <p className="text-lg text-muted-foreground leading-relaxed max-w-xl">
+                Build trading strategies in Python. Submit them to a hidden holdout market.
+                Compete on the only grade that matters in finance.
               </p>
-              <p className="text-base font-medium text-[#14b8a6]">
+              <blockquote className="border-l-2 border-[#C9A34E] pl-4 text-muted-foreground italic text-base">
                 Reality is the final test set.
-              </p>
-              <div className="flex items-center gap-3 pt-2">
+              </blockquote>
+              <div className="flex items-center gap-3 pt-1">
                 <Link href="/getting-started">
-                  <Button size="lg" className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-medium px-6">
+                  <Button size="lg"
+                    className="bg-[#0B1F3A] hover:bg-[#0B1F3A]/90 text-white font-medium px-6">
                     Start Building
                   </Button>
                 </Link>
                 <Link href="/compete">
                   <Button size="lg" variant="outline"
-                    className="border-border text-foreground hover:bg-accent font-medium px-6">
+                    className="border-border font-medium px-6">
                     Explore Competitions
                   </Button>
                 </Link>
               </div>
             </div>
-            <div className="hidden lg:flex items-center justify-center h-96 rounded-2xl border border-border bg-card/30 overflow-hidden">
+            <div className="hidden lg:flex items-center justify-center h-[360px]">
               <HeroViz />
             </div>
           </div>
         </div>
-        <div className="pointer-events-none absolute inset-0 -z-10"
-          style={{ background: 'radial-gradient(ellipse 80% 60% at 70% 40%, oklch(0.6 0.2 260 / 0.06), transparent)' }} />
+      </section>
+
+      {/* ── Research artifacts ────────────────────────────────────────── */}
+      <section className="border-b border-border bg-secondary/40">
+        <div className="container mx-auto px-4 py-16">
+          <div className="grid md:grid-cols-3 gap-10">
+
+            {/* Competitions */}
+            <div>
+              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-5">
+                Active Competitions
+              </p>
+              <div className="flex flex-col divide-y divide-border">
+                {competitions && competitions.length > 0
+                  ? (competitions as Cohort[]).map(c => (
+                    <div key={c.id} className="py-3 flex items-center justify-between gap-4">
+                      <span className="text-sm text-foreground font-medium leading-snug">{c.name}</span>
+                      <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
+                        c.status === 'active'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-secondary text-muted-foreground'
+                      }`}>{c.status}</span>
+                    </div>
+                  ))
+                  : [
+                    { name: 'US Equity Alpha Challenge', participants: 324 },
+                    { name: 'Market Making Arena', participants: 118 },
+                    { name: 'Macro Forecasting Challenge', participants: 87 },
+                  ].map(c => (
+                    <div key={c.name} className="py-3 flex items-center justify-between gap-4">
+                      <span className="text-sm text-foreground font-medium">{c.name}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{c.participants}</span>
+                    </div>
+                  ))
+                }
+                <div className="pt-4">
+                  <Link href="/compete"
+                    className="text-xs font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
+                    All competitions →
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Research */}
+            <div>
+              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-5">
+                Research
+              </p>
+              <div className="flex flex-col divide-y divide-border">
+                {[
+                  'Overfitting in Cross-Sectional Equity Signals',
+                  'Hidden Holdout Evaluation Framework',
+                  'Factor Zoo Decay: 2000–2024',
+                  'Reinforcement Learning Market Makers',
+                ].map(title => (
+                  <div key={title} className="py-3">
+                    <p className="text-sm text-foreground leading-snug">{title}</p>
+                  </div>
+                ))}
+                <div className="pt-4">
+                  <Link href="/anomalies"
+                    className="text-xs font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
+                    Anomaly tracker →
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Courses */}
+            <div>
+              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-5">
+                Curriculum
+              </p>
+              <div className="flex flex-col divide-y divide-border">
+                {[
+                  { title: 'Introduction to Quantitative Finance', level: 'Foundations' },
+                  { title: 'Machine Learning for Markets', level: 'Intermediate' },
+                  { title: 'Market Microstructure & HFT', level: 'Advanced' },
+                  { title: 'Alpha Decay & Portfolio Construction', level: 'Advanced' },
+                ].map(c => (
+                  <div key={c.title} className="py-3">
+                    <p className="text-sm text-foreground font-medium leading-snug">{c.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{c.level}</p>
+                  </div>
+                ))}
+                <div className="pt-4">
+                  <Link href="/classroom/new"
+                    className="text-xs font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
+                    Create a cohort →
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
       </section>
 
       {/* ── Core insight ──────────────────────────────────────────────── */}
-      <section className="border-t border-border bg-card/20">
+      <section className="border-b border-border">
         <div className="container mx-auto px-4 py-20">
-          <div className="max-w-3xl mx-auto text-center mb-14">
-            <h2 className="font-serif text-3xl lg:text-4xl text-foreground mb-4">
-              The problem with backtesting
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
+              The Problem
+            </p>
+            <h2 className="font-serif text-3xl lg:text-4xl text-foreground mb-6 leading-snug">
+              Most platforms grade the wrong thing.
             </h2>
-            <p className="text-muted-foreground text-lg leading-relaxed">
-              Most platforms reward in-sample Sharpe. That&apos;s easy to game — fit the noise,
-              overoptimize the parameters, and your backtest looks great.
-              Then you trade live and lose money. ConvexPi grades you the way markets do.
+            <p className="text-muted-foreground text-lg leading-relaxed mb-10 max-w-2xl">
+              In-sample Sharpe is easy to manufacture. Fit the noise, overoptimize
+              the parameters, and your backtest looks excellent. Then you trade live and lose money.
+              ConvexPi grades you the way the market does — on data you have never seen.
             </p>
-          </div>
 
-          {/* IS vs OOS comparison */}
-          <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-10">
-            <div className="rounded-xl border border-border bg-card/60 p-6">
-              <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase mb-3">
-                What most platforms grade
-              </p>
-              <p className="font-mono text-4xl font-bold text-foreground mb-2">IS Sharpe</p>
-              <p className="text-sm text-muted-foreground">
-                Performance on the same data you trained on.
-                Easy to overfit. Meaningless in live trading.
-              </p>
-              <div className="mt-4 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-red-400/60" />
-                <span className="text-xs text-muted-foreground">Gameable</span>
+            <div className="grid md:grid-cols-2 gap-4 max-w-xl">
+              <div className="rounded-lg border border-border bg-card p-5">
+                <p className="text-[10px] font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-2">
+                  What most platforms grade
+                </p>
+                <p className="font-mono text-3xl font-bold text-foreground mb-2">IS Sharpe</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  In-sample performance on data you trained on.
+                  Meaningless in live trading. Easy to overfit.
+                </p>
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                  <span className="text-xs text-muted-foreground">Gameable</span>
+                </div>
               </div>
-            </div>
-            <div className="rounded-xl border border-[#14b8a6]/40 bg-[#14b8a6]/5 p-6">
-              <p className="text-xs font-medium tracking-widest text-[#14b8a6] uppercase mb-3">
-                What ConvexPi grades
-              </p>
-              <p className="font-mono text-4xl font-bold text-foreground mb-2">OOS Sharpe</p>
-              <p className="text-sm text-muted-foreground">
-                Performance on a holdout market you never saw.
-                The seed stays secret. You can&apos;t overfit what you can&apos;t see.
-              </p>
-              <div className="mt-4 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#14b8a6]" />
-                <span className="text-xs text-[#14b8a6]">The only grade that matters</span>
+              <div className="rounded-lg border border-[#C9A34E]/30 bg-[#C9A34E]/5 p-5">
+                <p className="text-[10px] font-semibold tracking-[0.15em] text-[#C9A34E] uppercase mb-2">
+                  What ConvexPi grades
+                </p>
+                <p className="font-mono text-3xl font-bold text-foreground mb-2">OOS Sharpe</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Performance on a holdout market with a secret seed.
+                  You cannot overfit what you cannot see.
+                </p>
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-xs text-[#C9A34E] font-medium">The only grade that matters</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── How it works ──────────────────────────────────────────────── */}
-      <section className="border-t border-border">
-        <div className="container mx-auto px-4 py-20">
-          <div className="mb-12">
-            <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase mb-2">
-              How it works
-            </p>
-            <h2 className="text-2xl font-semibold text-foreground">From idea to track record</h2>
-          </div>
-          <div className="grid md:grid-cols-4 gap-0">
-            {[
-              {
-                step: '01',
-                color: '#3b82f6',
-                title: 'Build',
-                desc: 'Write a Python strategy using our synthetic equity panel. Explore momentum, mean-reversion, ML signals — whatever hypothesis you want to test.',
-              },
-              {
-                step: '02',
-                color: '#14b8a6',
-                title: 'Backtest',
-                desc: 'See your in-sample Sharpe, drawdowns, turnover. Get instant feedback on how your strategy behaves historically.',
-              },
-              {
-                step: '03',
-                color: '#f59e0b',
-                title: 'Hidden evaluation',
-                desc: 'Submit to a competition. Your strategy runs on a holdout market with a secret seed. This is your real grade — data you never touched.',
-              },
-              {
-                step: '04',
-                color: '#a78bfa',
-                title: 'Track record',
-                desc: 'Rankings persist. Top strategies build a public track record. Great for portfolios, research, and recruiting.',
-              },
-            ].map((s, i) => (
-              <div key={i} className="relative flex flex-col gap-4 p-6 border-l first:border-l-0 md:border-l border-t md:border-t-0 border-border">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-muted-foreground">{s.step}</span>
-                  <div className="h-px flex-1 bg-border" />
-                  {i < 3 && <span className="text-muted-foreground text-xs hidden md:inline">→</span>}
-                </div>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
-                  style={{ backgroundColor: `${s.color}18`, color: s.color }}>
-                  {i + 1}
-                </div>
-                <h3 className="font-semibold text-foreground">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Live demo leaderboard ─────────────────────────────────────── */}
-      {demoLeaderboard.length > 0 && (
-        <section className="border-t border-border bg-card/20">
+      {/* ── Factor anomaly evidence ───────────────────────────────────── */}
+      {anomalies.length > 0 && (
+        <section className="border-b border-border bg-secondary/40">
           <div className="container mx-auto px-4 py-20">
-            <div className="grid lg:grid-cols-2 gap-12 items-start">
+            <div className="max-w-3xl mb-10">
+              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
+                Evidence
+              </p>
+              <h2 className="font-serif text-3xl text-foreground mb-4">
+                Most published anomalies decay out-of-sample.
+              </h2>
+              <p className="text-muted-foreground leading-relaxed">
+                We track the Fama-French factor zoo against live markets.
+                Some effects survive. Many do not. This is what you are competing to find.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="bg-secondary border-b border-border">
+                    <th className="text-left px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">Anomaly</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">IS Sharpe</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">OOS Sharpe</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border bg-card">
+                  {anomalies.slice(0, 6).map((a) => {
+                    const isDead = a.status === 'dead'
+                    const decayed = a.oos_sharpe < a.is_sharpe * 0.7
+                    return (
+                      <tr key={a.name} className="hover:bg-secondary/40 transition-colors">
+                        <td className="px-4 py-3 font-medium text-foreground">{a.name}</td>
+                        <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                          {a.is_sharpe.toFixed(2)}
+                        </td>
+                        <td className={`px-4 py-3 text-right font-mono font-semibold ${
+                          isDead ? 'text-red-500' : decayed ? 'text-amber-600' : 'text-emerald-600'
+                        }`}>
+                          {a.oos_sharpe.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                            isDead
+                              ? 'bg-red-100 text-red-600'
+                              : decayed
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {a.status}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-5">
+              <Link href="/anomalies"
+                className="text-sm font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
+                Full anomaly tracker →
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Live leaderboard ──────────────────────────────────────────── */}
+      {demoLeaderboard.length > 0 && (
+        <section className="border-b border-border">
+          <div className="container mx-auto px-4 py-20">
+            <div className="grid lg:grid-cols-[1fr_440px] gap-14 items-start">
               <div>
-                <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase mb-3">
-                  Live example
+                <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
+                  Live Example
                 </p>
-                <h2 className="font-serif text-3xl text-foreground mb-4">
-                  The lesson in one table
+                <h2 className="font-serif text-3xl text-foreground mb-5 leading-snug">
+                  The lesson in one table.
                 </h2>
-                <p className="text-muted-foreground leading-relaxed mb-6">
-                  Random Noise has the highest in-sample Sharpe. It has the worst out-of-sample Sharpe.
-                  That&apos;s the entire lesson of quantitative finance in three rows.
+                <p className="text-muted-foreground leading-relaxed mb-4">
+                  Strategies with the highest in-sample Sharpe often have the
+                  worst out-of-sample Sharpe. That gap is overfitting.
+                  ConvexPi ranks you on the right column.
                 </p>
-                <p className="text-sm text-muted-foreground mb-6">
-                  The <span className="text-[#14b8a6] font-medium">OOS Sharpe column</span> is what
-                  ConvexPi actually ranks you on. Build strategies that survive data they&apos;ve never seen.
+                <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                  The{' '}
+                  <span className="font-medium text-[#C9A34E]">OOS Sharpe</span>{' '}
+                  is computed on a holdout market with a seed you never see.
+                  Build strategies that survive data they have never encountered.
                 </p>
                 <Link href="/compete/demo-fall-2026/leaderboard">
-                  <Button variant="outline" className="border-border">
+                  <Button variant="outline" size="sm">
                     View full leaderboard →
                   </Button>
                 </Link>
               </div>
 
-              <div className="rounded-xl border border-border bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#14b8a6]" />
+              <div className="rounded-lg border border-border bg-card overflow-hidden shadow-sm">
+                <div className="px-4 py-3 border-b border-border bg-secondary/50 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   <span className="text-xs text-muted-foreground font-mono">Demo Competition — Fall 2026</span>
                 </div>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Strategy</th>
-                      <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">IS Sharpe</th>
-                      <th className="text-right px-4 py-3 text-xs font-medium text-[#14b8a6] uppercase tracking-wider">OOS Sharpe</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">Strategy</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">IS</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-[#C9A34E] uppercase">OOS</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border">
                     {demoLeaderboard.map((row, i) => (
-                      <tr key={i} className="border-b border-border last:border-0">
-                        <td className="px-4 py-3 text-foreground font-medium">
+                      <tr key={i} className="hover:bg-secondary/30 transition-colors">
+                        <td className="px-4 py-3 text-foreground font-medium text-xs truncate max-w-[160px]">
                           {row.submissions?.strategy_name ?? '—'}
                         </td>
-                        <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                        <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground">
                           {row.is_sharpe?.toFixed(2)}
                         </td>
-                        <td className={`px-4 py-3 text-right font-mono font-semibold ${
-                          (row.oos_sharpe ?? 0) >= 0 ? 'text-[#14b8a6]' : 'text-red-400'
+                        <td className={`px-4 py-3 text-right font-mono text-xs font-semibold ${
+                          (row.oos_sharpe ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'
                         }`}>
                           {row.oos_sharpe?.toFixed(2)}
                         </td>
@@ -263,150 +378,82 @@ export default async function Home() {
         </section>
       )}
 
-      {/* ── Factor anomaly research ───────────────────────────────────── */}
-      {anomalies.length > 0 && (
-        <section className="border-t border-border">
-          <div className="container mx-auto px-4 py-20">
-            <div className="mb-10">
-              <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase mb-2">
-                Research
-              </p>
-              <h2 className="text-2xl font-semibold text-foreground mb-2">
-                Real market anomalies. Real decay.
-              </h2>
-              <p className="text-muted-foreground max-w-xl">
-                We track the Fama-French factor zoo against live markets. Most published anomalies are
-                weaker out-of-sample than their papers claimed. Some are dead. This is what you&apos;re
-                competing to find.
-              </p>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {anomalies.map((a) => {
-                const decayed = a.oos_sharpe < a.is_sharpe
-                const isDead = a.status === 'dead'
-                return (
-                  <div key={a.name}
-                    className="flex items-center justify-between p-4 rounded-xl border border-border bg-card/40">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{a.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-                        IS {a.is_sharpe.toFixed(2)} → OOS {a.oos_sharpe.toFixed(2)}
-                      </p>
-                    </div>
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                      isDead
-                        ? 'bg-red-500/10 text-red-400'
-                        : decayed
-                        ? 'bg-[#f59e0b]/10 text-[#f59e0b]'
-                        : 'bg-[#14b8a6]/10 text-[#14b8a6]'
-                    }`}>
-                      {a.status}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-            <div className="mt-6">
-              <Link href="/anomalies" className="text-sm text-[#3b82f6] hover:text-[#2563eb] transition-colors">
-                Explore full anomaly tracker →
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Three pillars ─────────────────────────────────────────────── */}
-      <section className="border-t border-border bg-card/20">
+      {/* ── Platform ──────────────────────────────────────────────────── */}
+      <section className="border-b border-border bg-secondary/40">
         <div className="container mx-auto px-4 py-20">
-          <div className="mb-10">
-            <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase mb-2">
+          <div className="max-w-xl mb-12">
+            <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
               Platform
             </p>
-            <h2 className="text-2xl font-semibold text-foreground">Three ways to learn</h2>
+            <h2 className="font-serif text-3xl text-foreground">
+              Three environments. One question.
+            </h2>
+            <p className="text-muted-foreground mt-3 leading-relaxed">
+              Can your strategy survive data it has never seen?
+            </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                icon: (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15M14.25 3.104c.251.023.501.05.75.082M19.8 15l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.607L5 14.5m14.8.5l.2 2M5 14.5l-.2 2m0 0l-.467 1.4a1.125 1.125 0 001.072 1.472h12.19a1.125 1.125 0 001.072-1.472l-.467-1.4m-13.4 0h13.4" />
-                  </svg>
-                ),
-                color: '#3b82f6',
                 label: 'Lab',
+                accentColor: '#0B1F3A',
                 title: 'Alpha Discovery Lab',
+                desc: 'Write strategies against a synthetic equity panel with embedded factor signals. Six structured missions take you from naive overfitting to disciplined out-of-sample evaluation.',
                 bullets: [
-                  'Synthetic equity panel with planted factor signals',
-                  'Python-native: pandas, numpy, scikit-learn',
-                  'Instant IS/OOS breakdown on every backtest',
-                  'Six structured missions from intro to ML',
+                  'Python-native (pandas, numpy, scikit-learn)',
+                  'IS / OOS breakdown on every submission',
+                  'Six missions: intro through ML methods',
                 ],
                 href: '/getting-started',
                 cta: 'Start Mission 1',
               },
               {
-                icon: (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
-                  </svg>
-                ),
-                color: '#14b8a6',
                 label: 'Arena',
+                accentColor: '#C9A34E',
                 title: 'Live Market Arena',
+                desc: 'Deploy agents that submit live orders to a limit-order-book simulation running in real time. Compete against classmates, market makers, and noise traders.',
                 bullets: [
-                  'Real-time limit-order-book simulation',
-                  'Connect agents via WebSocket',
-                  'Trade against classmates and market makers',
-                  'Survival score tracks who lasts under pressure',
+                  'WebSocket agent API — connect in Python',
+                  'Inventory risk, spread capture, adverse selection',
+                  'Survival score replaces Sharpe ratio',
                 ],
                 href: '/compete',
                 cta: 'Browse competitions',
               },
               {
-                icon: (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                  </svg>
-                ),
-                color: '#f59e0b',
                 label: 'Courses',
-                title: 'Structured Curriculum',
+                accentColor: '#6B7280',
+                title: 'Instructor Cohorts',
+                desc: 'Private competitions for classroom settings. Assign missions as homework, grade via OOS Sharpe, export gradebooks. FERPA-compliant by default.',
                 bullets: [
-                  'Instructor-led private cohorts',
-                  'Assignments with hard deadlines',
-                  'Private leaderboards, gradebook export',
-                  'FERPA-compliant by default',
+                  'Private leaderboards with deadlines',
+                  'Instructor dashboard and gradebook export',
+                  'University of Cincinnati — Fall 2026 cohort active',
                 ],
                 href: '/classroom/new',
                 cta: 'Create a cohort',
               },
             ].map(p => (
-              <div key={p.label} className="flex flex-col gap-5 p-6 rounded-xl border border-border bg-card/40 hover:bg-card transition-colors">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: `${p.color}18`, color: p.color }}>
-                  {p.icon}
-                </div>
+              <div key={p.label}
+                className="flex flex-col gap-4 p-6 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow">
                 <div>
-                  <p className="text-xs font-medium tracking-widest uppercase mb-1"
-                    style={{ color: p.color }}>{p.label}</p>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">{p.title}</h3>
-                  <ul className="flex flex-col gap-2">
+                  <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-2"
+                    style={{ color: p.accentColor }}>{p.label}</p>
+                  <h3 className="text-base font-semibold text-foreground mb-3">{p.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{p.desc}</p>
+                  <ul className="flex flex-col gap-1.5">
                     {p.bullets.map(b => (
-                      <li key={b} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <span className="mt-1.5 w-1 h-1 rounded-full shrink-0"
-                          style={{ backgroundColor: p.color }} />
+                      <li key={b} className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <span className="mt-1.5 w-1 h-1 rounded-full shrink-0 bg-border" />
                         {b}
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div className="mt-auto pt-2">
+                <div className="mt-auto pt-3 border-t border-border">
                   <Link href={p.href}
-                    className="text-sm font-medium transition-colors"
-                    style={{ color: p.color }}>
+                    className="text-xs font-semibold transition-colors hover:opacity-70"
+                    style={{ color: p.accentColor }}>
                     {p.cta} →
                   </Link>
                 </div>
@@ -416,99 +463,37 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── Open competitions ─────────────────────────────────────────── */}
-      {competitions && competitions.length > 0 && (
-        <section className="border-t border-border">
-          <div className="container mx-auto px-4 py-20">
-            <div className="flex items-baseline justify-between mb-10">
-              <div>
-                <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase mb-2">
-                  Open now
-                </p>
-                <h2 className="text-2xl font-semibold text-foreground">Active competitions</h2>
-              </div>
-              <Link href="/compete"
-                className="text-sm text-[#3b82f6] hover:text-[#2563eb] transition-colors font-medium">
-                View all →
+      {/* ── Bottom CTA ────────────────────────────────────────────────── */}
+      <section>
+        <div className="container mx-auto px-4 py-24">
+          <div className="max-w-2xl">
+            <h2 className="font-serif text-4xl lg:text-5xl text-foreground mb-5 leading-snug">
+              Can your model survive unseen data?
+            </h2>
+            <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
+              Mission 1 takes 30 minutes. Build a strategy in Python, submit it,
+              and see how it holds up against a market it has never touched.
+            </p>
+            <div className="flex items-center gap-4">
+              <Link href="/getting-started">
+                <Button size="lg"
+                  className="bg-[#0B1F3A] hover:bg-[#0B1F3A]/90 text-white font-medium px-8">
+                  Start Mission 1 — free
+                </Button>
+              </Link>
+              <Link href="https://github.com/convexpi" target="_blank" rel="noopener noreferrer">
+                <Button size="lg" variant="outline" className="font-medium px-8">
+                  View on GitHub
+                </Button>
               </Link>
             </div>
-            <div className="grid md:grid-cols-3 gap-6">
-              {(competitions as Cohort[]).map(c => <CompetitionCard key={c.id} cohort={c} />)}
-            </div>
+            <p className="mt-6 text-xs text-muted-foreground">
+              Open source · MIT License · Python-first
+            </p>
           </div>
-        </section>
-      )}
-
-      {/* ── Bottom CTA ────────────────────────────────────────────────── */}
-      <section className="border-t border-border">
-        <div className="container mx-auto px-4 py-24 text-center">
-          <h2 className="font-serif text-4xl text-foreground mb-4">
-            Can your model survive unseen data?
-          </h2>
-          <p className="text-muted-foreground text-lg mb-8 max-w-lg mx-auto">
-            Start with Mission 1. Takes 30 minutes. Build a strategy, submit it, and appear on the
-            public leaderboard.
-          </p>
-          <div className="flex items-center justify-center gap-4">
-            <Link href="/getting-started">
-              <Button size="lg" className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-medium px-8">
-                Start Mission 1 — free
-              </Button>
-            </Link>
-            <Link href="https://github.com/convexpi" target="_blank" rel="noopener noreferrer">
-              <Button size="lg" variant="outline" className="border-border font-medium px-8">
-                View on GitHub
-              </Button>
-            </Link>
-          </div>
-          <p className="mt-6 text-xs text-muted-foreground">
-            Open source · MIT License · Python-first
-          </p>
         </div>
       </section>
 
-    </div>
-  )
-}
-
-function CompetitionCard({ cohort }: { cohort: Cohort }) {
-  const isActive = cohort.status === 'active'
-  return (
-    <div className="flex flex-col gap-4 p-6 rounded-xl border border-border bg-card/40 hover:bg-card transition-colors">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-base font-semibold text-foreground leading-snug">{cohort.name}</h3>
-        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${
-          isActive
-            ? 'bg-[#14b8a6]/15 text-[#14b8a6]'
-            : cohort.status === 'ended'
-            ? 'bg-muted text-muted-foreground'
-            : 'bg-[#f59e0b]/15 text-[#f59e0b]'
-        }`}>
-          {cohort.status}
-        </span>
-      </div>
-      {cohort.description && (
-        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-          {cohort.description}
-        </p>
-      )}
-      <div className="mt-auto flex items-center justify-between pt-2">
-        {cohort.end_date
-          ? <span className="text-xs text-muted-foreground">
-              Ends {new Date(cohort.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-          : <span />
-        }
-        <Link href={`/compete/${cohort.slug}`}>
-          <Button size="sm"
-            className={isActive
-              ? 'bg-[#3b82f6] hover:bg-[#2563eb] text-white'
-              : 'border border-border bg-transparent text-foreground hover:bg-accent'
-            }>
-            {isActive ? 'Enter now' : 'View'}
-          </Button>
-        </Link>
-      </div>
     </div>
   )
 }
