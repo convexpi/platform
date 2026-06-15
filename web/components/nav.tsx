@@ -8,6 +8,7 @@ import { Menu } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { NotificationBell } from '@/components/notification-bell'
 import type { User } from '@supabase/supabase-js'
 
 function ConvexPiLogo({ showWordmark = true }: { showWordmark?: boolean }) {
@@ -112,6 +113,7 @@ export function Nav() {
         <div className="hidden md:flex ml-auto items-center gap-2">
           {user ? (
             <>
+              <NotificationBell />
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm">Dashboard</Button>
               </Link>
