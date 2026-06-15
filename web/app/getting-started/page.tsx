@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 
 const DEMO_SLUG = 'demo-fall-2026'
 const COLAB_URL =
-  'https://colab.research.google.com/github/convexpi/lab/blob/main/missions/mission_01_overfitting/notebook.ipynb'
+  'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_01_overfitting/notebook.ipynb'
 
 function Step({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return (
@@ -134,7 +134,7 @@ class MyStrategy(Strategy):
             <div className="text-muted-foreground text-xs">All active and past competitions</div>
           </Link>
           <a
-            href="https://colab.research.google.com/github/convexpi/lab/blob/main/missions/mission_02_marketmaker/notebook.ipynb"
+            href="https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_02_marketmaker/notebook.ipynb"
             target="_blank"
             rel="noopener noreferrer"
             className="p-3 rounded-lg border hover:bg-muted/30 transition-colors"
