@@ -44,9 +44,10 @@ export function Nav() {
       <div className="container mx-auto flex h-14 items-center gap-4 px-4">
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-semibold shrink-0">
-          <span className="text-primary">⚡</span>
-          <span>ConvexPi</span>
+        <Link href="/" className="flex items-center gap-1.5 shrink-0 select-none">
+          <span className="font-serif text-xl leading-none text-foreground">C</span>
+          <span className="font-serif text-xl leading-none text-[#3b82f6]">π</span>
+          <span className="ml-1 text-sm font-medium tracking-wide text-foreground/80 hidden sm:inline">ConvexPi</span>
         </Link>
 
         {/* Desktop nav links */}
@@ -94,8 +95,10 @@ export function Nav() {
             </SheetTrigger>
             <SheetContent side="right" className="w-72">
               <SheetHeader>
-                <SheetTitle className="text-left">
-                  <span className="text-primary">⚡</span> ConvexPi
+                <SheetTitle className="text-left flex items-center gap-1">
+                  <span className="font-serif text-xl">C</span>
+                  <span className="font-serif text-xl text-[#3b82f6]">π</span>
+                  <span className="ml-1 text-sm font-medium">ConvexPi</span>
                 </SheetTitle>
               </SheetHeader>
 
