@@ -30,13 +30,34 @@ function ConvexPiLogo({ showWordmark = true }: { showWordmark?: boolean }) {
 export function Nav() {
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
+  const [username, setUsername] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user)
+      if (data.user) {
+        supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', data.user.id)
+          .single()
+          .then(({ data: p }) => setUsername(p?.username ?? null))
+      }
+    })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) {
+        supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data: p }) => setUsername(p?.username ?? null))
+      } else {
+        setUsername(null)
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -93,6 +114,13 @@ export function Nav() {
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm">Dashboard</Button>
               </Link>
+              {username && (
+                <Link href={`/profile/${username}`}
+                  className="w-7 h-7 rounded-full bg-primary/15 hover:bg-primary/25 flex items-center justify-center text-xs font-semibold text-primary transition-colors"
+                  title={`Profile: @${username}`}>
+                  {username[0].toUpperCase()}
+                </Link>
+              )}
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 Sign out
               </Button>
@@ -144,6 +172,11 @@ export function Nav() {
                     <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
                       <Button variant="outline" className="w-full">Dashboard</Button>
                     </Link>
+                    {username && (
+                      <Link href={`/profile/${username}`} onClick={() => setMobileOpen(false)}>
+                        <Button variant="ghost" className="w-full">My profile</Button>
+                      </Link>
+                    )}
                     <Button
                       variant="ghost"
                       className="w-full"
