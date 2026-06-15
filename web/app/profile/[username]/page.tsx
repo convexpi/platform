@@ -10,6 +10,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const { username } = await params
   const supabase = await createClient()
 
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, username, display_name, university, bio, created_at')
@@ -17,6 +19,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     .single()
 
   if (!profile) notFound()
+
+  const isOwner = authUser?.id === profile.id
 
   const { data: submissions } = await supabase
     .from('submissions')
@@ -64,7 +68,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           {profile.bio && <p className="text-sm text-foreground/80 mt-2 max-w-md">{profile.bio}</p>}
           <p className="text-xs text-muted-foreground mt-2">Member since {memberSince}</p>
         </div>
-        <CopyProfileLink username={profile.username} />
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <CopyProfileLink username={profile.username} />
+          {isOwner && (
+            <Link href="/profile/edit"
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors">
+              Edit profile
+            </Link>
+          )}
+        </div>
       </div>
 
       {rows.length > 0 && (

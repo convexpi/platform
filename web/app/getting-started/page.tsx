@@ -67,7 +67,7 @@ export default function GettingStarted() {
           </a>
           <p className="mt-3 text-xs text-muted-foreground">
             No local setup needed. Colab runs in your browser.{' '}
-            <code className="bg-muted px-1 rounded">pip install convexpi</code> is the only install.
+            <code className="bg-muted px-1 rounded">pip install convexpi-lab</code> is the only install.
           </p>
         </Step>
 
