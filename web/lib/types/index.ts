@@ -10,6 +10,8 @@ export interface Profile {
   display_name: string | null
   university: string | null
   bio: string | null
+  github_username: string | null
+  website_url: string | null
   created_at: string
 }
 

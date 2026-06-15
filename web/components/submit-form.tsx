@@ -63,6 +63,23 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
     return () => clearTimeout(id)
   }, [code])
 
+  // Poll for grade results after submission
+  useEffect(() => {
+    if (!submitted || submitted.status === 'completed' || submitted.status === 'failed') return
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('submissions')
+        .select('*, grade_reports(*)')
+        .eq('id', submitted.id)
+        .single()
+      if (data && (data.status === 'completed' || data.status === 'failed')) {
+        setSubmitted(data as Submission)
+        clearInterval(interval)
+      }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [submitted?.id, submitted?.status])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
@@ -211,6 +228,14 @@ function SubmissionRow({ submission: s }: { submission: Submission }) {
           </div>
         </div>
       </CardHeader>
+      {(s.status === 'pending' || s.status === 'running') && (
+        <CardContent>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground py-2">
+            <span className="inline-block w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            Grader is running… results appear automatically (usually under 2 minutes).
+          </div>
+        </CardContent>
+      )}
       {report && (
         <CardContent>
           <div className="grid grid-cols-3 gap-4 text-sm">
@@ -219,14 +244,41 @@ function SubmissionRow({ submission: s }: { submission: Submission }) {
             <Metric label="OvFit ratio" value={report.overfitting_ratio != null ? `${(report.overfitting_ratio * 100).toFixed(0)}%` : '—'}
               positive={report.overfitting_ratio != null && report.overfitting_ratio > 0.7} />
           </div>
-          {report.alphas_discovered != null && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Alphas discovered: {report.alphas_discovered}/{report.total_alphas}
-            </p>
+          {/* Alpha details breakdown */}
+          {report.alpha_details && report.alpha_details.length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Alpha discovery ({report.alphas_discovered}/{report.total_alphas} found)
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {report.alpha_details.map((alpha) => (
+                  <div key={alpha.feature} className="flex items-center gap-2">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${alpha.discovered ? 'bg-green-500' : 'bg-muted-foreground/30'}`} />
+                    <span className="text-xs font-mono text-foreground w-24 shrink-0">{alpha.feature}</span>
+                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${alpha.discovered ? 'bg-green-500' : 'bg-muted-foreground/30'}`}
+                        style={{ width: `${Math.min(100, Math.abs(alpha.corr ?? 0) * 100)}%` }}
+                      />
+                    </div>
+                    <span className={`text-xs font-mono w-12 text-right shrink-0 ${alpha.discovered ? 'text-green-600' : 'text-muted-foreground'}`}>
+                      {alpha.corr != null ? (alpha.corr > 0 ? '+' : '') + alpha.corr.toFixed(3) : '—'}
+                    </span>
+                    <span className={`text-xs shrink-0 ${alpha.discovered ? 'text-green-600' : 'text-muted-foreground/60'}`}>
+                      {alpha.discovered ? '✓' : '○'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Correlation between your signal and each planted alpha. ✓ = discovered (|corr| above threshold).
+              </p>
+            </div>
           )}
+
           {s.error_message && <p className="mt-2 text-xs text-destructive">{s.error_message}</p>}
           {s.status === 'completed' && (
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-3 mt-3 pt-3 border-t">
               {report?.id && (
                 <a
                   href={`/api/grade-reports/${report.id}`}
