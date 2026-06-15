@@ -50,6 +50,7 @@ interface SubmitFormProps {
 export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }: SubmitFormProps) {
   const [code, setCode] = useState(STARTER_CODE)
   const [strategyName, setStrategyName] = useState('')
+  const [githubUrl, setGithubUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState<Submission | null>(null)
@@ -73,7 +74,7 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
     const res = await fetch('/api/submissions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cohortId, strategyName, code }),
+      body: JSON.stringify({ cohortId, strategyName, code, githubUrl: githubUrl.trim() || null }),
     })
 
     const body = await res.json()
@@ -99,6 +100,20 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
             placeholder="My momentum strategy"
             required
           />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="github_url">GitHub repository (optional)</Label>
+          <Input
+            id="github_url"
+            type="url"
+            value={githubUrl}
+            onChange={e => setGithubUrl(e.target.value)}
+            placeholder="https://github.com/you/my-strategy"
+          />
+          <p className="text-xs text-muted-foreground">
+            Link your code so others can learn from your approach. Visible on the leaderboard.
+          </p>
         </div>
 
         <div className="flex flex-col gap-1.5">

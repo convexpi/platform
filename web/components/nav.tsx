@@ -66,9 +66,10 @@ export function Nav() {
 
   const navLinks = [
     { href: '/getting-started', label: 'Get started' },
+    { href: '/research',        label: 'Research' },
     { href: '/compete',         label: 'Compete' },
-    { href: '/seasons',         label: 'Seasons' },
     { href: '/anomalies',       label: 'Anomalies' },
+    { href: '/community',       label: 'Community' },
     ...(user ? [
       { href: '/dashboard', label: 'Dashboard' },
       { href: '/tutor',     label: 'Tutor' },
