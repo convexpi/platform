@@ -117,7 +117,9 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 top-full mt-1 w-80 rounded-xl border bg-background shadow-lg z-50 overflow-hidden">
           <div className="px-4 py-3 border-b flex items-center justify-between">
-            <p className="text-sm font-semibold">Notifications</p>
+            <Link href="/notifications" onClick={() => setOpen(false)} className="text-sm font-semibold hover:text-primary transition-colors">
+              Notifications
+            </Link>
             {notifications.length > 0 && (
               <button
                 onClick={() => {

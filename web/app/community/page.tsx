@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { FollowButton } from '@/components/follow-button'
+import { Avatar } from '@/components/avatar'
+import { CommunitySearch } from './search'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -22,7 +24,12 @@ type ResearcherRow = {
   is_following: boolean
 }
 
-export default async function CommunityPage() {
+export default async function CommunityPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
+  const { q } = await searchParams
   const supabase = await createClient()
   const { data: { user: authUser } } = await supabase.auth.getUser()
 
@@ -31,7 +38,7 @@ export default async function CommunityPage() {
     .from('profiles')
     .select('id, username, display_name, university, bio, github_username')
     .order('created_at', { ascending: false })
-    .limit(100)
+    .limit(200)
 
   if (!profiles || profiles.length === 0) {
     return (
@@ -87,7 +94,7 @@ export default async function CommunityPage() {
     for (const row of myFollows ?? []) followingSet.add(row.following_id)
   }
 
-  const researchers: ResearcherRow[] = profiles.map(p => ({
+  let researchers: ResearcherRow[] = profiles.map(p => ({
     ...p,
     best_oos_sharpe: bestSharpeByUser[p.id] ?? null,
     submission_count: subCountByUser[p.id] ?? 0,
@@ -101,12 +108,23 @@ export default async function CommunityPage() {
     return (b.best_oos_sharpe ?? -999) - (a.best_oos_sharpe ?? -999)
   })
 
+  // Client-side search filter applied server-side via searchParams
+  const query = q?.toLowerCase().trim()
+  if (query) {
+    researchers = researchers.filter(r =>
+      r.username.toLowerCase().includes(query) ||
+      (r.display_name?.toLowerCase().includes(query)) ||
+      (r.university?.toLowerCase().includes(query)) ||
+      (r.github_username?.toLowerCase().includes(query))
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <div className="mb-10">
+      <div className="mb-8">
         <p className="text-xs font-medium tracking-widest text-primary uppercase mb-3">Community</p>
         <h1 className="text-3xl font-serif mb-3">Researchers</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground mb-6">
           {profiles.length} researcher{profiles.length !== 1 ? 's' : ''} building and testing quantitative strategies.
           {!authUser && (
             <>
@@ -118,18 +136,25 @@ export default async function CommunityPage() {
             </>
           )}
         </p>
+        <CommunitySearch initialQuery={q ?? ''} />
       </div>
 
-      <div className="flex flex-col gap-3">
-        {researchers.map(r => (
-          <ResearcherCard
-            key={r.id}
-            researcher={r}
-            isCurrentUser={authUser?.id === r.id}
-            showFollowButton={!!authUser && authUser.id !== r.id}
-          />
-        ))}
-      </div>
+      {researchers.length === 0 && query ? (
+        <p className="text-sm text-muted-foreground py-8 text-center">
+          No researchers match &ldquo;{query}&rdquo;.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {researchers.map(r => (
+            <ResearcherCard
+              key={r.id}
+              researcher={r}
+              isCurrentUser={authUser?.id === r.id}
+              showFollowButton={!!authUser && authUser.id !== r.id}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -143,7 +168,6 @@ function ResearcherCard({
   isCurrentUser: boolean
   showFollowButton: boolean
 }) {
-  const initial = (r.display_name ?? r.username)[0].toUpperCase()
   const sharpeColor = r.best_oos_sharpe == null ? 'text-muted-foreground'
     : r.best_oos_sharpe > 0.5 ? 'text-green-600'
     : r.best_oos_sharpe > 0   ? 'text-amber-600'
@@ -151,14 +175,16 @@ function ResearcherCard({
 
   return (
     <div className="flex items-center gap-4 p-4 rounded-xl border bg-card/40 hover:border-primary/30 transition-colors">
-      {/* Avatar */}
       <Link href={`/profile/${r.username}`} className="shrink-0">
-        <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-sm font-semibold text-primary hover:bg-primary/25 transition-colors">
-          {initial}
-        </div>
+        <Avatar
+          username={r.username}
+          displayName={r.display_name}
+          githubUsername={r.github_username}
+          size={40}
+          className="hover:opacity-80 transition-opacity"
+        />
       </Link>
 
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <Link href={`/profile/${r.username}`}
@@ -182,7 +208,6 @@ function ResearcherCard({
         </p>
       </div>
 
-      {/* Stats */}
       <div className="hidden sm:flex items-center gap-5 text-xs shrink-0">
         <div className="text-center">
           <p className={`font-mono font-semibold ${sharpeColor}`}>
@@ -200,7 +225,6 @@ function ResearcherCard({
         </div>
       </div>
 
-      {/* Follow */}
       {showFollowButton && (
         <div className="shrink-0">
           <FollowButton
