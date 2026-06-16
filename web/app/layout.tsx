@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/nav";
+import { Footer } from "@/components/footer";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -14,7 +15,7 @@ const instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   applicationName: "ConvexPi",
   title: "ConvexPi — Quantitative Finance Education",
-  description: "Build trading strategies. Test them against hidden market data. Compete in live simulations.",
+  description: "Learn quantitative finance through rigorous experimentation. Build strategies, test them on hidden data, and find out whether your model actually generalises.",
   manifest: "/site.webmanifest",
   icons: {
     icon: [
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col">
         <Nav />
         <main className="flex-1">{children}</main>
+        <Footer />
       </body>
     </html>
   );
