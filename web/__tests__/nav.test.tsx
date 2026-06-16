@@ -14,9 +14,17 @@ const mockOnAuthStateChange = vi.fn(() => ({
   data: { subscription: { unsubscribe: vi.fn() } },
 }))
 const mockSignOut = vi.fn(() => Promise.resolve({}))
+const mockProfileSingle = vi.fn(() => Promise.resolve({ data: { username: 'tester' } }))
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: mockProfileSingle,
+        })),
+      })),
+    })),
     auth: {
       getUser: mockGetUser,
       onAuthStateChange: mockOnAuthStateChange,
@@ -27,6 +35,10 @@ vi.mock('@/lib/supabase/client', () => ({
 
 vi.mock('next/navigation', () => ({
   usePathname: vi.fn(() => '/'),
+}))
+
+vi.mock('@/components/notification-bell', () => ({
+  NotificationBell: () => <div data-testid="notification-bell" />,
 }))
 
 // Import after mocks
@@ -41,6 +53,7 @@ describe('Nav', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetUser.mockResolvedValue({ data: { user: null } })
+    mockProfileSingle.mockResolvedValue({ data: { username: 'tester' } })
     mockOnAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } })
     ;(usePathname as ReturnType<typeof vi.fn>).mockReturnValue('/')
   })
