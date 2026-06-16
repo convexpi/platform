@@ -95,9 +95,9 @@ export function Footer() {
               MIT License
             </a>.
           </p>
-          <code className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded font-mono">
-            pip install convexpi-lab
-          </code>
+          <p className="text-xs text-muted-foreground max-w-sm text-right">
+            For educational purposes only. Nothing on this platform constitutes investment advice.
+          </p>
         </div>
       </div>
     </footer>
