@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { NotificationBell } from '@/components/notification-bell'
+import { Avatar } from '@/components/avatar'
 import type { User } from '@supabase/supabase-js'
 
 function ConvexPiLogo({ showWordmark = true }: { showWordmark?: boolean }) {
@@ -32,6 +33,7 @@ export function Nav() {
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
   const [username, setUsername] = useState<string | null>(null)
+  const [githubUsername, setGithubUsername] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const supabase = createClient()
 
@@ -41,10 +43,13 @@ export function Nav() {
       if (data.user) {
         supabase
           .from('profiles')
-          .select('username')
+          .select('username, github_username')
           .eq('id', data.user.id)
           .single()
-          .then(({ data: p }) => setUsername(p?.username ?? null))
+          .then(({ data: p }) => {
+            setUsername(p?.username ?? null)
+            setGithubUsername(p?.github_username ?? null)
+          })
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
@@ -58,6 +63,7 @@ export function Nav() {
           .then(({ data: p }) => setUsername(p?.username ?? null))
       } else {
         setUsername(null)
+        setGithubUsername(null)
       }
     })
     return () => subscription.unsubscribe()
@@ -129,10 +135,13 @@ export function Nav() {
                 <Button variant="ghost" size="sm">Dashboard</Button>
               </Link>
               {username && (
-                <Link href={`/profile/${username}`}
-                  className="w-7 h-7 rounded-full bg-primary/15 hover:bg-primary/25 flex items-center justify-center text-xs font-semibold text-primary transition-colors"
-                  title={`Profile: @${username}`}>
-                  {username[0].toUpperCase()}
+                <Link href={`/profile/${username}`} title={`Profile: @${username}`}>
+                  <Avatar
+                    username={username}
+                    githubUsername={githubUsername}
+                    size={28}
+                    className="hover:ring-2 hover:ring-primary/40 transition-all"
+                  />
                 </Link>
               )}
               <Button variant="outline" size="sm" onClick={handleSignOut}>
