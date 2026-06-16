@@ -110,7 +110,7 @@ export default async function Home() {
             </div>
             <div className="flex items-center gap-4">
               <a
-                href="https://github.com/openquantplatform/openquant"
+                href="https://github.com/convexpi/lab"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition-colors"
@@ -532,7 +532,7 @@ export default async function Home() {
               </div>
               <div className="flex gap-3">
                 <a
-                  href="https://github.com/openquantplatform/openquant"
+                  href="https://github.com/convexpi/lab"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -637,7 +637,7 @@ export default async function Home() {
                   Begin Mission 1
                 </Button>
               </Link>
-              <a href="https://github.com/openquantplatform/openquant" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/convexpi/lab" target="_blank" rel="noopener noreferrer">
                 <Button size="lg" variant="outline" className="font-medium px-8 gap-2">
                   <GitHubIcon className="w-4 h-4" />
                   View source

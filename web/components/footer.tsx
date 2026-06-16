@@ -22,7 +22,7 @@ const NAV_COLS = [
   {
     label: 'Open Source',
     links: [
-      { href: 'https://github.com/openquantplatform/openquant', label: 'GitHub', external: true },
+      { href: 'https://github.com/convexpi/lab', label: 'GitHub', external: true },
       { href: 'https://pypi.org/project/convexpi-lab/',         label: 'PyPI — convexpi-lab', external: true },
       { href: '/research/factor-zoo',                           label: 'Factor zoo & replication' },
     ],
@@ -43,7 +43,7 @@ export function Footer() {
               Build strategies. Test them on data you cannot see.
             </p>
             <div className="flex items-center gap-3 mt-4">
-              <a href="https://github.com/openquantplatform/openquant"
+              <a href="https://github.com/convexpi/lab"
                 target="_blank" rel="noopener noreferrer"
                 aria-label="GitHub"
                 className="text-muted-foreground hover:text-foreground transition-colors">
@@ -89,7 +89,7 @@ export function Footer() {
         <div className="border-t pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
             © {year} ConvexPi. Open source under the{' '}
-            <a href="https://github.com/openquantplatform/openquant/blob/main/LICENSE"
+            <a href="https://github.com/convexpi/lab/blob/main/LICENSE"
               target="_blank" rel="noopener noreferrer"
               className="underline underline-offset-4 hover:text-foreground transition-colors">
               MIT License

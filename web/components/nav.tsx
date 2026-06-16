@@ -118,7 +118,7 @@ export function Nav() {
         {/* Desktop auth buttons */}
         <div className="hidden md:flex ml-auto items-center gap-2">
           <a
-            href="https://github.com/openquantplatform/openquant"
+            href="https://github.com/convexpi/lab"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Source on GitHub"
