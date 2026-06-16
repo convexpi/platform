@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { CopyProfileLink } from './copy-link'
 import { FollowButton } from '@/components/follow-button'
+import { Avatar } from '@/components/avatar'
 import type { GradeReport } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -72,9 +73,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       <div className="flex items-start justify-between gap-4 mb-8">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center text-2xl font-serif text-primary shrink-0">
-              {(profile.display_name ?? profile.username)[0].toUpperCase()}
-            </div>
+            <Avatar
+              username={profile.username}
+              displayName={profile.display_name}
+              githubUsername={profile.github_username}
+              size={56}
+              className="shrink-0"
+            />
             <div className="min-w-0">
               <h1 className="text-xl font-semibold text-foreground truncate">
                 {profile.display_name ?? profile.username}
@@ -111,14 +116,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
           {/* Social counts */}
           <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-            <span>
+            <Link href={`/profile/${profile.username}/followers`}
+              className="hover:text-foreground transition-colors">
               <span className="font-medium text-foreground">{followerCount}</span>{' '}
               {followerCount === 1 ? 'follower' : 'followers'}
-            </span>
-            <span>
+            </Link>
+            <Link href={`/profile/${profile.username}/following`}
+              className="hover:text-foreground transition-colors">
               <span className="font-medium text-foreground">{followingCount}</span>{' '}
               following
-            </span>
+            </Link>
             <span className="text-muted-foreground/60">·</span>
             <span>Member since {memberSince}</span>
           </div>

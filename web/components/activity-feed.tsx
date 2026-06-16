@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { Avatar } from '@/components/avatar'
 
 type ActivityRow = {
   id: string
@@ -11,6 +12,7 @@ type ActivityRow = {
   cohort_type: string | null
   username: string | null
   display_name: string | null
+  github_username: string | null
 }
 
 export async function ActivityFeed({ followingIds }: { followingIds?: string[] }) {
@@ -24,7 +26,7 @@ export async function ActivityFeed({ followingIds }: { followingIds?: string[] }
       submitted_at,
       grade_reports(oos_sharpe),
       cohorts!inner(name, slug, type, visibility),
-      profiles!inner(username, display_name)
+      profiles!inner(username, display_name, github_username)
     `)
     .eq('status', 'completed')
     .order('submitted_at', { ascending: false })
@@ -40,7 +42,7 @@ export async function ActivityFeed({ followingIds }: { followingIds?: string[] }
     id: string; strategy_name: string; submitted_at: string
     grade_reports: { oos_sharpe: number | null }[] | { oos_sharpe: number | null } | null
     cohorts: { name: string; slug: string; type: string; visibility: string } | null
-    profiles: { username: string; display_name: string | null } | null
+    profiles: { username: string; display_name: string | null; github_username: string | null } | null
   }
 
   const rows = (submissions ?? []) as unknown as Row[]
@@ -59,6 +61,7 @@ export async function ActivityFeed({ followingIds }: { followingIds?: string[] }
         cohort_type: r.cohorts?.type ?? null,
         username: r.profiles?.username ?? null,
         display_name: r.profiles?.display_name ?? null,
+        github_username: r.profiles?.github_username ?? null,
       }
     })
 
@@ -83,9 +86,14 @@ export async function ActivityFeed({ followingIds }: { followingIds?: string[] }
         return (
           <div key={a.id} className="flex items-center gap-3 py-2.5 border-b last:border-b-0">
             {a.username && (
-              <Link href={`/profile/${a.username}`}
-                className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-xs font-semibold text-primary shrink-0 hover:bg-primary/25 transition-colors">
-                {(a.display_name ?? a.username)[0].toUpperCase()}
+              <Link href={`/profile/${a.username}`} className="shrink-0">
+                <Avatar
+                  username={a.username}
+                  displayName={a.display_name}
+                  githubUsername={a.github_username}
+                  size={28}
+                  className="hover:opacity-80 transition-opacity"
+                />
               </Link>
             )}
             <div className="flex-1 min-w-0">

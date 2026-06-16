@@ -7,9 +7,10 @@ interface Props {
   targetId: string
   initialIsFollowing: boolean
   initialFollowerCount: number
+  hideCount?: boolean
 }
 
-export function FollowButton({ targetId, initialIsFollowing, initialFollowerCount }: Props) {
+export function FollowButton({ targetId, initialIsFollowing, initialFollowerCount, hideCount }: Props) {
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing)
   const [count, setCount] = useState(initialFollowerCount)
   const [isPending, startTransition] = useTransition()
@@ -39,7 +40,7 @@ export function FollowButton({ targetId, initialIsFollowing, initialFollowerCoun
       >
         {isFollowing ? 'Following' : 'Follow'}
       </Button>
-      {count > 0 && (
+      {!hideCount && count > 0 && (
         <span className="text-xs text-muted-foreground">
           {count} {count === 1 ? 'follower' : 'followers'}
         </span>
