@@ -13,7 +13,7 @@ import type { User } from '@supabase/supabase-js'
 
 function ConvexPiLogo({ showWordmark = true }: { showWordmark?: boolean }) {
   return (
-    <span className="inline-flex items-center overflow-hidden rounded-sm bg-[#fcfaf9]">
+    <span className="inline-flex items-center overflow-hidden rounded-sm bg-background">
       <Image
         src={showWordmark ? '/convexpi-logo.png' : '/convexpi-mark.png'}
         alt=""
