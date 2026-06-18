@@ -8,6 +8,7 @@ const NAV_COLS = [
       { href: '/curriculum',      label: 'Curriculum' },
       { href: '/research',        label: 'Research library' },
       { href: '/anomalies',       label: 'Anomaly tracker' },
+      { href: '/papers',          label: 'Research papers' },
       { href: '/glossary',        label: 'Glossary' },
       { href: '/community',       label: 'Community' },
     ],

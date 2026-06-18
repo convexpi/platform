@@ -76,6 +76,7 @@ export function Nav() {
     { href: '/research',        label: 'Research' },
     { href: '/compete',         label: 'Compete' },
     { href: '/anomalies',       label: 'Anomalies' },
+    { href: '/papers',          label: 'Papers' },
     { href: '/community',       label: 'Community' },
     ...(user ? [
       { href: '/dashboard', label: 'Dashboard' },

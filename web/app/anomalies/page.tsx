@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { Suspense } from 'react'
 import { AnomalyList, type Anomaly } from './anomaly-list'
 
 export const metadata = {
@@ -108,7 +109,9 @@ export default function AnomalyGraveyardPage() {
       </div>
 
       {/* Interactive anomaly list */}
-      <AnomalyList anomalies={anomalies} />
+      <Suspense fallback={<div className="py-8 text-sm text-muted-foreground text-center">Loading…</div>}>
+        <AnomalyList anomalies={anomalies} />
+      </Suspense>
 
       {/* Footer */}
       <div className="mt-12 text-xs text-muted-foreground space-y-2 border-t pt-6">
