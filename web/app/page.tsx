@@ -9,7 +9,10 @@ import type { Cohort } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 type AnomalyStat = {
+  id: string
+  slug?: string
   name: string
+  source?: string
   is_sharpe: number
   oos_sharpe: number
   decay_pct: number
@@ -206,24 +209,29 @@ export default async function Home() {
             {/* Courses */}
             <div>
               <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-5">
-                Curriculum
+                Curriculum — 6 Missions
               </p>
               <div className="flex flex-col divide-y divide-border">
                 {[
-                  { title: 'Introduction to Quantitative Finance', level: 'Foundations' },
-                  { title: 'Machine Learning for Markets', level: 'Intermediate' },
-                  { title: 'Market Microstructure & HFT', level: 'Advanced' },
-                  { title: 'Alpha Decay & Portfolio Construction', level: 'Advanced' },
+                  { n: '01', title: 'Overfitting',        note: 'IS vs OOS Sharpe · hidden holdout' },
+                  { n: '02', title: 'Market Maker',       note: 'Spread capture · inventory risk' },
+                  { n: '03', title: 'Alpha Discovery',    note: 'Factor construction · signal decay' },
+                  { n: '04', title: 'Strategy Library',   note: 'Replication · the factor zoo' },
+                  { n: '05', title: 'Real Data',          note: 'Survivorship bias · stale prices' },
+                  { n: '06', title: 'Advanced Agents',    note: 'RL execution · end-to-end strategy' },
                 ].map(c => (
-                  <div key={c.title} className="py-3">
-                    <p className="text-sm text-foreground font-medium leading-snug">{c.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{c.level}</p>
+                  <div key={c.n} className="py-2.5 flex items-start gap-2.5">
+                    <span className="text-xs font-mono text-muted-foreground/60 mt-0.5 shrink-0">{c.n}</span>
+                    <div>
+                      <p className="text-sm text-foreground font-medium leading-snug">{c.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{c.note}</p>
+                    </div>
                   </div>
                 ))}
                 <div className="pt-4">
-                  <Link href="/classroom/new"
+                  <Link href="/curriculum"
                     className="text-xs font-medium text-[#C9A34E] hover:text-[#b8920d] transition-colors">
-                    Create a cohort →
+                    Full syllabus →
                   </Link>
                 </div>
               </div>
@@ -284,73 +292,91 @@ export default async function Home() {
       </section>
 
       {/* ── Factor anomaly evidence ───────────────────────────────────── */}
-      {anomalies.length > 0 && (
-        <section className="border-b border-border bg-secondary/40">
-          <div className="container mx-auto px-4 py-20">
-            <div className="max-w-3xl mb-10">
-              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
-                Replication Evidence
-              </p>
-              <h2 className="font-serif text-3xl text-foreground mb-4">
-                Most published anomalies decay out-of-sample.
-              </h2>
-              <p className="text-muted-foreground leading-relaxed">
-                We track the Fama-French factor zoo against live markets.
-                Some effects survive peer replication. Most attenuate sharply — a pattern
-                consistent with data mining rather than genuine risk premia.
-              </p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
-                <thead>
-                  <tr className="bg-secondary border-b border-border">
-                    <th className="text-left px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">Anomaly</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">IS Sharpe</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">OOS Sharpe</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border bg-card">
-                  {anomalies.slice(0, 6).map((a) => {
-                    const isDead = a.status === 'dead'
-                    const decayed = a.oos_sharpe < a.is_sharpe * 0.7
-                    return (
-                      <tr key={a.name} className="hover:bg-secondary/40 transition-colors">
-                        <td className="px-4 py-3 font-medium text-foreground">{a.name}</td>
-                        <td className="px-4 py-3 text-right font-mono text-muted-foreground">
-                          {a.is_sharpe.toFixed(2)}
-                        </td>
-                        <td className={`px-4 py-3 text-right font-mono font-semibold ${
-                          isDead ? 'text-red-500' : decayed ? 'text-amber-600' : 'text-emerald-600'
-                        }`}>
-                          {a.oos_sharpe.toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                            isDead
-                              ? 'bg-red-100 text-red-600'
-                              : decayed
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-emerald-100 text-emerald-700'
+      {anomalies.length > 0 && (() => {
+        const frenchFactors = anomalies.filter(a => !a.source || a.source === 'french')
+        const osapCount = anomalies.filter(a => a.source === 'osap').length
+        return (
+          <section className="border-b border-border bg-secondary/40">
+            <div className="container mx-auto px-4 py-20">
+              <div className="max-w-3xl mb-10">
+                <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
+                  Replication Evidence
+                </p>
+                <h2 className="font-serif text-3xl text-foreground mb-4">
+                  Most published anomalies decay out-of-sample.
+                </h2>
+                <p className="text-muted-foreground leading-relaxed mb-3">
+                  We track {anomalies.length} equity factor anomalies pre- and post-publication
+                  using the{' '}
+                  <Link href="/anomalies" className="underline underline-offset-4 hover:text-foreground">
+                    Open Source Asset Pricing
+                  </Link>{' '}
+                  dataset ({osapCount} predictors, 1926–2024) plus Kenneth French&apos;s flagship factors.
+                  Some effects survive peer replication. Most attenuate sharply — a pattern
+                  consistent with data mining rather than genuine risk premia.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-secondary border-b border-border">
+                      <th className="text-left px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">Anomaly</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">IS Sharpe</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">OOS Sharpe</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border bg-card">
+                    {frenchFactors.map((a) => {
+                      const isDead = a.status === 'dead'
+                      const decayed = a.oos_sharpe < a.is_sharpe * 0.7
+                      const slug = a.slug ?? a.id
+                      return (
+                        <tr key={a.name} className="hover:bg-secondary/40 transition-colors">
+                          <td className="px-4 py-3 font-medium text-foreground">
+                            <Link href={`/anomalies/${slug}`}
+                              className="hover:underline underline-offset-4">
+                              {a.name}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                            {a.is_sharpe.toFixed(2)}
+                          </td>
+                          <td className={`px-4 py-3 text-right font-mono font-semibold ${
+                            isDead ? 'text-red-500' : decayed ? 'text-amber-600' : 'text-emerald-600'
                           }`}>
-                            {a.status}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                            {a.oos_sharpe.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                              isDead
+                                ? 'bg-red-100 text-red-600'
+                                : decayed
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-emerald-100 text-emerald-700'
+                            }`}>
+                              {a.status}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-5 flex items-center gap-4">
+                <Link href="/anomalies"
+                  className="text-sm font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
+                  All {anomalies.length} anomalies →
+                </Link>
+                <span className="text-xs text-muted-foreground">
+                  filter by category, status, data type
+                </span>
+              </div>
             </div>
-            <div className="mt-5">
-              <Link href="/anomalies"
-                className="text-sm font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
-                Full anomaly tracker →
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )
+      })()}
 
       {/* ── Live leaderboard ──────────────────────────────────────────── */}
       {demoLeaderboard.length > 0 && (
