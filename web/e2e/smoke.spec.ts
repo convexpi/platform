@@ -127,10 +127,11 @@ test.describe('authenticated user journey', () => {
 // API health checks
 // ---------------------------------------------------------------------------
 
-test('health endpoint is not reachable via the web port (expected)', async ({ request }) => {
-  // The Arena health endpoint runs on a different port — this test just verifies
-  // the web app's /api routes respond correctly
-  const res = await request.get('/api/submissions', { failOnStatusCode: false })
-  // Should be 401 (not a 500 or connection error)
+test('api routes respond correctly to unauthenticated requests', async ({ request }) => {
+  // POST /api/submissions requires auth — should return 401, not 500
+  const res = await request.post('/api/submissions', {
+    failOnStatusCode: false,
+    data: { strategy_name: 'test', code: 'class MyStrategy: pass', cohort_id: 'x' },
+  })
   expect(res.status()).toBe(401)
 })
