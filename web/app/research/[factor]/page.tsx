@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { FACTORS, FACTOR_BY_SLUG, CATEGORY_LABELS, OOS_SURVIVAL_LABELS, type Paper } from '@/lib/research-data'
+import { CopyBibTeX } from '@/components/copy-bibtex'
 
 export async function generateStaticParams() {
   return FACTORS.map(f => ({ factor: f.slug }))
@@ -32,9 +33,16 @@ function PaperCard({ paper }: { paper: Paper }) {
           )}
           <p className="text-xs text-muted-foreground mt-0.5">{paper.authors}</p>
         </div>
-        <div className="shrink-0 text-right">
+        <div className="shrink-0 flex flex-col items-end gap-1">
           <p className="text-xs font-mono text-muted-foreground">{paper.year}</p>
           <p className="text-xs text-muted-foreground italic">{paper.journal}</p>
+          <CopyBibTeX
+            title={paper.title}
+            authors={paper.authors}
+            year={paper.year}
+            journal={paper.journal}
+            url={paper.url}
+          />
         </div>
       </div>
     </div>
