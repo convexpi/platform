@@ -1,7 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -107,6 +108,7 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
 
   return (
     <div className="flex flex-col gap-8">
+      <OOSExplainer />
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="name">Strategy name</Label>
@@ -302,6 +304,82 @@ function Metric({ label, value, positive }: { label: string; value: string; posi
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={`font-mono font-semibold ${positive ? 'text-green-600' : 'text-red-600'}`}>{value}</p>
+    </div>
+  )
+}
+
+function OOSExplainer() {
+  const [open, setOpen] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  return (
+    <div className="rounded-xl border bg-primary/5 border-primary/20 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
+      >
+        <div>
+          <p className="text-xs font-semibold text-primary/80">
+            How are submissions graded?
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Your strategy is evaluated on data it has never seen.
+          </p>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div ref={contentRef} className="px-4 pb-4 space-y-3">
+          <div className="h-px bg-primary/10" />
+
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Submissions are graded in two steps using the{' '}
+            <strong className="text-foreground">walk-forward protocol</strong>:
+          </p>
+
+          {/* IS vs OOS diagram */}
+          <div className="rounded-lg bg-background border p-4 font-mono text-xs space-y-2">
+            <div className="flex items-center gap-1">
+              <div className="flex-1 rounded bg-blue-100 text-blue-700 px-2 py-1.5 text-center text-[11px] font-semibold">
+                Training window (visible to you)
+              </div>
+              <div className="w-px h-8 bg-border mx-1" />
+              <div className="w-36 rounded bg-amber-100 text-amber-700 px-2 py-1.5 text-center text-[11px] font-semibold">
+                Hidden OOS period
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <div className="flex-1 text-center">IS Sharpe — computed here</div>
+              <div className="w-px mx-1" />
+              <div className="w-36 text-center">OOS Sharpe — your actual score</div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {[
+              {
+                metric: 'IS Sharpe',
+                desc: 'Performance on the data you could see. High IS is easy — just overfit. This metric alone tells you nothing.',
+              },
+              {
+                metric: 'OOS Sharpe',
+                desc: 'Performance on the hidden period. This is your real score. A positive OOS Sharpe is evidence your signal generalises.',
+              },
+              {
+                metric: 'Overfitting ratio',
+                desc: 'OOS ÷ IS Sharpe. A ratio near 1.0 means your strategy didn\'t overfit. Target ≥ 0.7.',
+              },
+            ].map(({ metric, desc }) => (
+              <div key={metric} className="flex gap-2">
+                <span className="font-mono text-xs font-semibold text-foreground shrink-0 w-28 mt-px">{metric}</span>
+                <span className="text-xs text-muted-foreground leading-relaxed">{desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
