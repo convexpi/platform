@@ -192,6 +192,29 @@ export default async function InstructorDashboard({
   const failed    = submissions.filter(s => s.status === 'failed').length
   const notSubmitted = students.filter(s => s.submissions === 0).length
 
+  // Cohort-level aggregate statistics (students who have at least one graded submission)
+  const gradedStudents = students.filter(s => s.bestOosSharpe != null)
+  const oosSharpes = gradedStudents.map(s => s.bestOosSharpe!)
+  const meanOos = oosSharpes.length > 0
+    ? oosSharpes.reduce((a, b) => a + b, 0) / oosSharpes.length
+    : null
+  const sorted = [...oosSharpes].sort((a, b) => a - b)
+  const medianOos = sorted.length > 0
+    ? sorted.length % 2 === 0
+      ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+      : sorted[Math.floor(sorted.length / 2)]
+    : null
+  const pctPositive = oosSharpes.length > 0
+    ? Math.round((oosSharpes.filter(x => x > 0).length / oosSharpes.length) * 100)
+    : null
+
+  // Average overfitting ratio across all completed grade_reports in this cohort
+  const allGradeReports = submissions.flatMap(s => toArray(s.grade_reports))
+    .filter(gr => gr.is_sharpe != null && gr.oos_sharpe != null && gr.is_sharpe !== 0)
+  const avgOvFit = allGradeReports.length > 0
+    ? allGradeReports.reduce((acc, gr) => acc + (gr.oos_sharpe! / gr.is_sharpe!), 0) / allGradeReports.length
+    : null
+
   return (
     <div className="container mx-auto px-4 py-10 max-w-7xl">
 
@@ -232,6 +255,51 @@ export default async function InstructorDashboard({
           </Card>
         ))}
       </div>
+
+      {/* Cohort aggregate statistics */}
+      {gradedStudents.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-base font-semibold mb-3">Cohort statistics</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              {
+                label: 'Mean OOS Sharpe',
+                value: meanOos != null ? meanOos.toFixed(2) : '—',
+                note: `${gradedStudents.length} graded`,
+                highlight: meanOos != null && meanOos > 0,
+              },
+              {
+                label: 'Median OOS Sharpe',
+                value: medianOos != null ? medianOos.toFixed(2) : '—',
+                note: 'best submission per student',
+                highlight: medianOos != null && medianOos > 0,
+              },
+              {
+                label: '% Positive OOS',
+                value: pctPositive != null ? `${pctPositive}%` : '—',
+                note: 'strategies that generalise',
+                highlight: pctPositive != null && pctPositive > 50,
+              },
+              {
+                label: 'Avg overfitting ratio',
+                value: avgOvFit != null ? avgOvFit.toFixed(2) : '—',
+                note: 'OOS ÷ IS Sharpe (target ≥ 0.7)',
+                highlight: avgOvFit != null && avgOvFit >= 0.7,
+              },
+            ].map(({ label, value, note, highlight }) => (
+              <Card key={label}>
+                <CardHeader className="pb-1 pt-4 px-4">
+                  <CardTitle className="text-xs text-muted-foreground font-normal">{label}</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <p className={`text-2xl font-bold font-mono ${highlight ? 'text-green-600' : ''}`}>{value}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{note}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Student progress table */}
       <section className="mb-12">

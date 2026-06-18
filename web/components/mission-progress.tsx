@@ -8,14 +8,14 @@ const MISSIONS = [
   {
     id: 'mission_01_overfitting',
     label: 'Mission 1',
-    title: 'The Overfitting Game',
+    title: 'The Overfitting Trap',
     desc: 'IS vs OOS Sharpe, grid-search trap',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_01_overfitting/notebook.ipynb',
   },
   {
     id: 'mission_02_marketmaker',
     label: 'Mission 2',
-    title: 'Market Maker',
+    title: 'The Limit-Order Book',
     desc: 'Inventory risk, adverse selection, PnL attribution',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_02_marketmaker/notebook.ipynb',
   },
@@ -25,6 +25,27 @@ const MISSIONS = [
     title: 'Alpha Discovery',
     desc: 'IC analysis, FDR, walk-forward validation',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_03_alpha_discovery/notebook.ipynb',
+  },
+  {
+    id: 'mission_04_strategy_library',
+    label: 'Mission 4',
+    title: 'Strategy Library',
+    desc: 'Replication, combination, and the factor zoo',
+    colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_04_strategy_library/notebook.ipynb',
+  },
+  {
+    id: 'mission_05_real_data',
+    label: 'Mission 5',
+    title: 'Real Data',
+    desc: 'Survivorship bias, stale prices, live equity panels',
+    colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_05_real_data/notebook.ipynb',
+  },
+  {
+    id: 'mission_06_advanced_agents',
+    label: 'Mission 6',
+    title: 'Advanced Agents',
+    desc: 'RL execution, market impact, end-to-end strategy',
+    colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_06_advanced_agents/notebook.ipynb',
   },
 ]
 
