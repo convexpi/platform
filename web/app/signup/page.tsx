@@ -14,12 +14,14 @@ export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!agreed) return
     setLoading(true)
     setError(null)
     const { error } = await supabase.auth.signUp({
@@ -37,6 +39,7 @@ export default function SignupPage() {
   }
 
   async function handleGitHub() {
+    if (!agreed) return
     await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -52,7 +55,36 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
-            <Button variant="outline" type="button" onClick={handleGitHub} className="w-full gap-2">
+
+            {/* Disclaimer — must be checked before either sign-up path */}
+            <div className={`rounded-lg border p-3 text-xs leading-relaxed transition-colors ${
+              agreed ? 'border-border bg-muted/20' : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20'
+            }`}>
+              <label className="flex gap-2.5 cursor-pointer items-start">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={e => setAgreed(e.target.checked)}
+                  className="mt-0.5 shrink-0 accent-foreground"
+                />
+                <span className="text-muted-foreground">
+                  I understand that ConvexPi is{' '}
+                  <strong className="text-foreground">for educational purposes only</strong>.
+                  Nothing on this platform constitutes investment advice, a solicitation, or a
+                  recommendation to buy or sell any security. Past factor performance shown here
+                  does not guarantee future results. I will not rely on ConvexPi for investment
+                  decisions.
+                </span>
+              </label>
+            </div>
+
+            <Button
+              variant="outline"
+              type="button"
+              onClick={handleGitHub}
+              disabled={!agreed}
+              className="w-full gap-2"
+            >
               <GitHubIcon />
               Sign up with GitHub
             </Button>
@@ -83,7 +115,9 @@ export default function SignupPage() {
                   required minLength={8} />
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" disabled={loading}>{loading ? 'Creating account…' : 'Create account'}</Button>
+              <Button type="submit" disabled={loading || !agreed}>
+                {loading ? 'Creating account…' : 'Create account'}
+              </Button>
               <p className="text-center text-sm text-muted-foreground">
                 Have an account? <Link href="/login" className="underline">Sign in</Link>
               </p>
