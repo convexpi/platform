@@ -97,10 +97,11 @@ describe('Nav', () => {
 
   it('shows Sign out when authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.com' } } })
-    mockOnAuthStateChange.mockImplementation((cb) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOnAuthStateChange.mockImplementation(((cb: any) => {
       cb('SIGNED_IN', { user: { id: 'u1' } })
       return { data: { subscription: { unsubscribe: vi.fn() } } }
-    })
+    }) as any)
     render(<Nav />)
     // Auth state updated via onAuthStateChange callback
     expect(screen.getAllByText(/Sign out/i).length).toBeGreaterThan(0)
