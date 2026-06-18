@@ -7,26 +7,58 @@ export const metadata: Metadata = { title: 'Cohorts — Admin' }
 export default async function AdminCohorts() {
   const db = createAdminClient()
 
-  const { data } = await db
-    .from('cohorts')
-    .select(`
-      id, slug, name, type, visibility, status, created_at,
-      start_date, end_date,
-      profiles!cohorts_owner_id_fkey(username),
-      cohort_members(count),
-      submissions(count)
-    `)
-    .order('created_at', { ascending: false })
+  // cohorts.owner_id references auth.users (not profiles), so we can't use
+  // a PostgREST embedded join to get the owner's username. Instead, fetch
+  // cohorts without the owner join, then look up profiles separately by id.
+  const [
+    { data: cohortData, error: cohortErr },
+    { data: memberRows },
+    { data: subRows },
+  ] = await Promise.all([
+    db
+      .from('cohorts')
+      .select('id, slug, name, type, visibility, status, created_at, start_date, end_date, owner_id')
+      .order('created_at', { ascending: false }),
+    db.from('cohort_members').select('cohort_id'),
+    db.from('submissions').select('cohort_id'),
+  ])
+
+  if (cohortErr) {
+    return (
+      <div className="p-8">
+        <h1 className="text-2xl font-semibold mb-2">Cohorts</h1>
+        <p className="text-sm text-red-600 font-mono bg-red-50 p-4 rounded-lg">
+          Error: {cohortErr.message}
+        </p>
+      </div>
+    )
+  }
+
+  // Count members and submissions per cohort
+  const memberCount: Record<string, number> = {}
+  for (const m of memberRows ?? []) {
+    memberCount[m.cohort_id] = (memberCount[m.cohort_id] ?? 0) + 1
+  }
+  const subCount: Record<string, number> = {}
+  for (const s of subRows ?? []) {
+    subCount[s.cohort_id] = (subCount[s.cohort_id] ?? 0) + 1
+  }
+
+  // Fetch owner usernames (profiles.id = auth.users.id = cohorts.owner_id)
+  const ownerIds = [...new Set((cohortData ?? []).map(c => c.owner_id).filter(Boolean))]
+  const { data: ownerProfiles } = ownerIds.length
+    ? await db.from('profiles').select('id, username').in('id', ownerIds)
+    : { data: [] }
+  const ownerUsername: Record<string, string> = {}
+  for (const p of ownerProfiles ?? []) ownerUsername[p.id] = p.username
 
   type CohortRow = {
     id: string; slug: string; name: string; type: string; visibility: string
-    status: string; created_at: string; start_date: string | null; end_date: string | null
-    profiles: { username: string } | null
-    cohort_members: { count: number }[] | null
-    submissions: { count: number }[] | null
+    status: string; created_at: string; start_date: string | null
+    end_date: string | null; owner_id: string
   }
 
-  const rows = (data ?? []) as unknown as CohortRow[]
+  const rows = (cohortData ?? []) as CohortRow[]
 
   const typeStyle: Record<string, string> = {
     competition: 'bg-[#C9A34E]/10 text-[#C9A34E]',
@@ -72,8 +104,7 @@ export default async function AdminCohorts() {
           <tbody className="divide-y">
             {rows.map(c => {
               const base = c.type === 'competition' ? '/compete' : '/classroom'
-              const memberCount = (c.cohort_members as unknown as { count: number }[])?.[0]?.count ?? 0
-              const subCount = (c.submissions as unknown as { count: number }[])?.[0]?.count ?? 0
+              const owner = ownerUsername[c.owner_id]
               return (
                 <tr key={c.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
@@ -89,10 +120,10 @@ export default async function AdminCohorts() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {c.profiles?.username ? (
-                      <Link href={`/profile/${c.profiles.username}`}
+                    {owner ? (
+                      <Link href={`/profile/${owner}`}
                         className="hover:text-foreground transition-colors">
-                        @{c.profiles.username}
+                        @{owner}
                       </Link>
                     ) : '—'}
                   </td>
@@ -107,8 +138,8 @@ export default async function AdminCohorts() {
                       </span>
                     ) : '—'}
                   </td>
-                  <td className="px-4 py-3 text-right font-mono text-xs">{memberCount}</td>
-                  <td className="px-4 py-3 text-right font-mono text-xs">{subCount}</td>
+                  <td className="px-4 py-3 text-right font-mono text-xs">{memberCount[c.id] ?? 0}</td>
+                  <td className="px-4 py-3 text-right font-mono text-xs">{subCount[c.id] ?? 0}</td>
                   <td className="px-4 py-3 text-right">
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyle[c.status] ?? ''}`}>
                       {c.status}

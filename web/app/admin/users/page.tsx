@@ -12,29 +12,55 @@ export default async function AdminUsers({
   const { q } = await searchParams
   const db = createAdminClient()
 
-  let query = db
-    .from('profiles')
-    .select(`
-      id, username, display_name, university, bio, github_username,
-      created_at,
-      submissions(count),
-      follows_as_following:follows!follows_following_id_fkey(count)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(200)
+  // Fetch profiles and all user_ids from submissions in parallel.
+  // submissions.user_id references auth.users (same id as profiles.id)
+  // so we can't use an embedded PostgREST join — do it separately.
+  const [
+    { data: profiles, error: profilesErr },
+    { data: subRows },
+    { data: followRows },
+  ] = await Promise.all([
+    db
+      .from('profiles')
+      .select('id, username, display_name, university, github_username, created_at')
+      .order('created_at', { ascending: false })
+      .limit(500),
+    db.from('submissions').select('user_id'),
+    // follows.following_id = the person being followed = profile.id
+    db.from('follows').select('following_id'),
+  ])
 
-  const { data: profiles } = await query
+  if (profilesErr) {
+    return (
+      <div className="p-8">
+        <h1 className="text-2xl font-semibold mb-2">Users</h1>
+        <p className="text-sm text-red-600 font-mono bg-red-50 p-4 rounded-lg">
+          Error fetching users: {profilesErr.message}
+        </p>
+      </div>
+    )
+  }
+
+  // Count submissions per user_id
+  const subCountByUser: Record<string, number> = {}
+  for (const s of subRows ?? []) {
+    subCountByUser[s.user_id] = (subCountByUser[s.user_id] ?? 0) + 1
+  }
+
+  // Count followers per profile (how many people follow this user)
+  const followerCountByUser: Record<string, number> = {}
+  for (const f of followRows ?? []) {
+    followerCountByUser[f.following_id] = (followerCountByUser[f.following_id] ?? 0) + 1
+  }
 
   type ProfileRow = {
     id: string; username: string; display_name: string | null
     university: string | null; github_username: string | null; created_at: string
-    submissions: { count: number }[] | null
-    follows_as_following: { count: number }[] | null
   }
 
-  let rows = (profiles ?? []) as unknown as ProfileRow[]
+  let rows = (profiles ?? []) as ProfileRow[]
 
-  // Filter by search
+  // Filter by search (client-side on the fetched 500)
   const sq = q?.toLowerCase().trim()
   if (sq) {
     rows = rows.filter(r =>
@@ -75,38 +101,44 @@ export default async function AdminUsers({
             </tr>
           </thead>
           <tbody className="divide-y">
-            {rows.map(r => {
-              const subCount = (r.submissions as unknown as { count: number }[])?.[0]?.count ?? 0
-              const followerCount = (r.follows_as_following as unknown as { count: number }[])?.[0]?.count ?? 0
-              return (
-                <tr key={r.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <Link href={`/profile/${r.username}`}
-                      className="font-medium hover:text-primary transition-colors">
-                      {r.display_name ?? r.username}
-                    </Link>
-                    <p className="text-xs text-muted-foreground">@{r.username}</p>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">{r.university ?? '—'}</td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {r.github_username ? (
-                      <a href={`https://github.com/${r.github_username}`}
-                        target="_blank" rel="noopener noreferrer"
-                        className="hover:text-foreground transition-colors">
-                        @{r.github_username}
-                      </a>
-                    ) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono text-xs">{subCount}</td>
-                  <td className="px-4 py-3 text-right font-mono text-xs">{followerCount}</td>
-                  <td className="px-4 py-3 text-right text-xs text-muted-foreground tabular-nums">
-                    {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </td>
-                </tr>
-              )
-            })}
+            {rows.map(r => (
+              <tr key={r.id} className="hover:bg-muted/30 transition-colors">
+                <td className="px-4 py-3">
+                  <Link href={`/profile/${r.username}`}
+                    className="font-medium hover:text-primary transition-colors">
+                    {r.display_name ?? r.username}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">@{r.username}</p>
+                </td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{r.university ?? '—'}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">
+                  {r.github_username ? (
+                    <a href={`https://github.com/${r.github_username}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="hover:text-foreground transition-colors">
+                      @{r.github_username}
+                    </a>
+                  ) : '—'}
+                </td>
+                <td className="px-4 py-3 text-right font-mono text-xs">
+                  {subCountByUser[r.id] ?? 0}
+                </td>
+                <td className="px-4 py-3 text-right font-mono text-xs">
+                  {followerCountByUser[r.id] ?? 0}
+                </td>
+                <td className="px-4 py-3 text-right text-xs text-muted-foreground tabular-nums">
+                  {new Date(r.created_at).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric',
+                  })}
+                </td>
+              </tr>
+            ))}
             {rows.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">No users found.</td></tr>
+              <tr>
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                  No users found.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
