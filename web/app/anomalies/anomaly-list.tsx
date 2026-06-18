@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -126,17 +127,29 @@ function FilterPill({
 type SortKey = 'oos_sharpe' | 'is_sharpe' | 'decay_pct' | 'pub_year' | 'name'
 
 export function AnomalyList({ anomalies }: { anomalies: Anomaly[] }) {
+  const searchParams = useSearchParams()
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [catFilter,    setCatFilter]    = useState<string>('all')
+  const [catFilter,    setCatFilter]    = useState<string>(() => searchParams.get('cat') ?? 'all')
   const [sourceFilter, setSourceFilter] = useState<string>('all')
+  const [decadeFilter, setDecadeFilter] = useState<string>('all')
   const [search, setSearch]             = useState<string>('')
+
+  useEffect(() => {
+    const cat = searchParams.get('cat')
+    if (cat) setCatFilter(cat)
+  }, [searchParams])
   const [sortKey, setSortKey]           = useState<SortKey>('oos_sharpe')
   const [sortDir, setSortDir]           = useState<'asc' | 'desc'>('desc')
 
-  // Derive unique categories
+  // Derive unique categories and decades
   const categories = useMemo(() => {
     const cats = new Set(anomalies.map(a => a.category).filter(Boolean) as string[])
     return ['all', ...Array.from(cats).sort()]
+  }, [anomalies])
+
+  const decades = useMemo(() => {
+    const ds = new Set(anomalies.map(a => Math.floor(a.pub_year / 10) * 10).filter(Boolean))
+    return ['all', ...Array.from(ds).sort((a, b) => (a as number) - (b as number)).map(String)]
   }, [anomalies])
 
   // Filter
@@ -145,6 +158,10 @@ export function AnomalyList({ anomalies }: { anomalies: Anomaly[] }) {
     if (statusFilter !== 'all') list = list.filter(a => a.status === statusFilter)
     if (catFilter    !== 'all') list = list.filter(a => a.category === catFilter)
     if (sourceFilter !== 'all') list = list.filter(a => (a.source ?? 'french') === sourceFilter)
+    if (decadeFilter !== 'all') {
+      const d = parseInt(decadeFilter)
+      list = list.filter(a => Math.floor(a.pub_year / 10) * 10 === d)
+    }
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(a =>
@@ -155,7 +172,7 @@ export function AnomalyList({ anomalies }: { anomalies: Anomaly[] }) {
       )
     }
     return list
-  }, [anomalies, statusFilter, catFilter, sourceFilter, search])
+  }, [anomalies, statusFilter, catFilter, sourceFilter, decadeFilter, search])
 
   // Sort
   const sorted = useMemo(() => {
@@ -247,6 +264,19 @@ export function AnomalyList({ anomalies }: { anomalies: Anomaly[] }) {
               label={c === 'all' ? 'All' : c}
               active={catFilter === c}
               onClick={() => setCatFilter(c)}
+            />
+          ))}
+        </div>
+
+        {/* Decade published */}
+        <div className="flex gap-1.5 items-center flex-wrap">
+          <span className="text-xs text-muted-foreground">Decade:</span>
+          {decades.map(d => (
+            <FilterPill
+              key={d}
+              label={d === 'all' ? 'All' : `${d}s`}
+              active={decadeFilter === d}
+              onClick={() => setDecadeFilter(d)}
             />
           ))}
         </div>

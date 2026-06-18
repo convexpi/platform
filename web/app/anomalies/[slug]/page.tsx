@@ -238,6 +238,51 @@ export default async function FactorPage(
         ))}
       </div>
 
+      {/* Related anomalies in same category */}
+      {a.category && (() => {
+        const related = loadStats().anomalies
+          .filter(r => r.category === a.category && (r.slug ?? r.id) !== slug)
+          .sort((x, y) => Math.abs(y.oos_sharpe) - Math.abs(x.oos_sharpe))
+          .slice(0, 6)
+        if (!related.length) return null
+        return (
+          <div className="border rounded-lg p-4 mb-8">
+            <h2 className="text-sm font-semibold mb-3">
+              More {a.category} anomalies
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {related.map(r => {
+                const rs = r.slug ?? r.id
+                return (
+                  <Link
+                    key={r.id}
+                    href={`/anomalies/${rs}`}
+                    className="flex items-center justify-between px-3 py-2 rounded-md
+                               hover:bg-muted/50 border border-transparent hover:border-border
+                               transition-colors text-sm"
+                  >
+                    <span className="font-medium truncate mr-3">{r.name}</span>
+                    <span className={`font-mono text-xs shrink-0 ${
+                      r.oos_sharpe > 0.5 ? 'text-green-600' :
+                      r.oos_sharpe > 0.2 ? 'text-amber-600' :
+                      r.oos_sharpe > 0   ? 'text-muted-foreground' : 'text-red-500'
+                    }`}>
+                      {r.oos_sharpe >= 0 ? '+' : ''}{r.oos_sharpe.toFixed(2)}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+            <Link
+              href={`/anomalies?cat=${encodeURIComponent(a.category)}`}
+              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground mt-3 inline-block"
+            >
+              See all {a.category} anomalies →
+            </Link>
+          </div>
+        )
+      })()}
+
       {/* Back link */}
       <Link
         href="/anomalies"
