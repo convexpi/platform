@@ -14,11 +14,13 @@ export default async function AdminSubmissions({
   const { status, q } = await searchParams
   const db = createAdminClient()
 
-  let query = db
+  // submissions.user_id → auth.users (not profiles), so we can't use an
+  // embedded join to get usernames. Fetch submissions + cohorts + grade_reports
+  // together (all have direct FKs), then look up profile usernames separately.
+  let subQuery = db
     .from('submissions')
     .select(`
-      id, strategy_name, status, submitted_at, error_message,
-      profiles(username),
+      id, strategy_name, status, submitted_at, error_message, user_id,
       cohorts(name, slug, type),
       grade_reports(oos_sharpe, is_sharpe, overfitting_ratio, graded_at)
     `)
@@ -26,25 +28,47 @@ export default async function AdminSubmissions({
     .limit(200)
 
   if (status && status !== 'all') {
-    query = query.eq('status', status)
+    subQuery = subQuery.eq('status', status)
   }
 
-  const { data } = await query
+  const { data, error: subErr } = await subQuery
+
+  if (subErr) {
+    return (
+      <div className="p-8">
+        <h1 className="text-2xl font-semibold mb-2">Submissions</h1>
+        <p className="text-sm text-red-600 font-mono bg-red-50 p-4 rounded-lg">
+          Error: {subErr.message}
+        </p>
+      </div>
+    )
+  }
 
   type SubRow = {
-    id: string; strategy_name: string; status: string; submitted_at: string; error_message: string | null
-    profiles: { username: string } | null
+    id: string; strategy_name: string; status: string; submitted_at: string
+    error_message: string | null; user_id: string
     cohorts: { name: string; slug: string; type: string } | null
     grade_reports: { oos_sharpe: number | null; is_sharpe: number | null; overfitting_ratio: number | null; graded_at: string }[] | null
+    username?: string
   }
 
   let rows = (data ?? []) as unknown as SubRow[]
+
+  // Look up usernames for all unique user_ids (profiles.id === auth.users.id)
+  const userIds = [...new Set(rows.map(r => r.user_id).filter(Boolean))]
+  if (userIds.length) {
+    const { data: profiles } = await db
+      .from('profiles').select('id, username').in('id', userIds)
+    const usernameById: Record<string, string> = {}
+    for (const p of profiles ?? []) usernameById[p.id] = p.username
+    rows = rows.map(r => ({ ...r, username: usernameById[r.user_id] }))
+  }
 
   const sq = q?.toLowerCase().trim()
   if (sq) {
     rows = rows.filter(r =>
       r.strategy_name.toLowerCase().includes(sq) ||
-      r.profiles?.username?.toLowerCase().includes(sq) ||
+      r.username?.toLowerCase().includes(sq) ||
       r.cohorts?.name?.toLowerCase().includes(sq)
     )
   }
@@ -130,10 +154,10 @@ export default async function AdminSubmissions({
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {s.profiles?.username ? (
-                      <Link href={`/profile/${s.profiles.username}`}
+                    {s.username ? (
+                      <Link href={`/profile/${s.username}`}
                         className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                        @{s.profiles.username}
+                        @{s.username}
                       </Link>
                     ) : '—'}
                   </td>

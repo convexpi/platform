@@ -36,7 +36,7 @@ export default async function AdminOverview() {
     db.from('cohorts').select('*', { count: 'exact', head: true }),
     db.from('follows').select('*', { count: 'exact', head: true }),
     db.from('submissions')
-      .select('id, strategy_name, status, submitted_at, profiles(username), cohorts(name, slug, type)')
+      .select('id, strategy_name, status, submitted_at, user_id, cohorts(name, slug, type)')
       .order('submitted_at', { ascending: false })
       .limit(10),
     db.from('profiles')
@@ -63,10 +63,21 @@ export default async function AdminOverview() {
 
   type SubRow = {
     id: string; strategy_name: string; status: string; submitted_at: string
-    profiles: { username: string } | null
+    user_id: string
     cohorts: { name: string; slug: string; type: string } | null
+    username?: string
   }
-  const subs = (recentSubmissions ?? []) as unknown as SubRow[]
+  let subs = (recentSubmissions ?? []) as unknown as SubRow[]
+
+  // Resolve usernames: submissions.user_id → auth.users; profiles.id = auth.users.id
+  const subUserIds = [...new Set(subs.map(s => s.user_id).filter(Boolean))]
+  if (subUserIds.length) {
+    const db2 = createAdminClient()
+    const { data: subProfiles } = await db2.from('profiles').select('id, username').in('id', subUserIds)
+    const usernameById: Record<string, string> = {}
+    for (const p of subProfiles ?? []) usernameById[p.id] = p.username
+    subs = subs.map(s => ({ ...s, username: usernameById[s.user_id] }))
+  }
 
   const statusColor: Record<string, string> = {
     completed: 'text-emerald-600 bg-emerald-50',
@@ -121,10 +132,10 @@ export default async function AdminOverview() {
                     <tr key={s.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-2.5 font-medium truncate max-w-[140px]">{s.strategy_name}</td>
                       <td className="px-4 py-2.5">
-                        {s.profiles?.username ? (
-                          <Link href={`/profile/${s.profiles.username}`}
+                        {s.username ? (
+                          <Link href={`/profile/${s.username}`}
                             className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                            @{s.profiles.username}
+                            @{s.username}
                           </Link>
                         ) : '—'}
                       </td>
