@@ -5,8 +5,10 @@ const NAV_COLS = [
     label: 'Learn',
     links: [
       { href: '/getting-started', label: 'Getting started' },
+      { href: '/curriculum',      label: 'Curriculum' },
       { href: '/research',        label: 'Research library' },
       { href: '/anomalies',       label: 'Anomaly tracker' },
+      { href: '/glossary',        label: 'Glossary' },
       { href: '/community',       label: 'Community' },
     ],
   },
