@@ -1,4 +1,4 @@
--- OpenQuant Platform schema
+-- ConvexPi Platform schema
 -- Run this in your Supabase SQL editor (Dashboard → SQL Editor → New query)
 
 -- ── Profiles (extends auth.users) ───────────────────────────────────────────
