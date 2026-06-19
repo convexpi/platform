@@ -17,8 +17,10 @@ const NAV_COLS = [
     label: 'Platform',
     links: [
       { href: '/compete',       label: 'Open problems' },
+      { href: '/agents',        label: 'Agent arena' },
       { href: '/classroom/new', label: 'Instructor cohorts' },
       { href: '/dashboard',     label: 'Dashboard' },
+      { href: '/settings/api-keys', label: 'API keys' },
       { href: '/tutor',         label: 'AI tutor' },
     ],
   },
