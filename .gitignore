@@ -9,3 +9,4 @@ web/.vercel/
 web/.env.local
 web/.env.*.local
 .vercel
+supabase/.temp/
