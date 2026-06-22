@@ -76,6 +76,7 @@ export function Nav() {
     { href: '/research',        label: 'Research' },
     { href: '/compete',         label: 'Compete' },
     { href: '/anomalies',       label: 'Anomalies' },
+    { href: '/playground',      label: 'Playground' },
     { href: '/papers',          label: 'Papers' },
     { href: '/agents',          label: 'Agents' },
     { href: '/community',       label: 'Community' },
