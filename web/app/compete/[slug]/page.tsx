@@ -23,6 +23,70 @@ export default async function CompetitionOverview({ params }: { params: Promise<
 
   if (!cohort) notFound()
 
+  // Arena (live trading) competitions have a non-empty arena_config and are
+  // played by connecting an agent to the Arena WebSocket server — not by
+  // submitting strategy code. Render a dedicated "connect" overview for them.
+  const isArena = Object.keys((cohort.arena_config ?? {}) as Record<string, unknown>).length > 0
+  if (isArena) {
+    const arenaUrl = process.env.NEXT_PUBLIC_ARENA_URL || ''
+    return (
+      <div className="container mx-auto px-4 py-10 max-w-3xl">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold">{cohort.name}</h1>
+            <Badge>{cohort.status}</Badge>
+          </div>
+          {cohort.description && <p className="text-muted-foreground text-lg">{cohort.description}</p>}
+        </div>
+
+        <div className="flex gap-3 mb-8">
+          <Link href={`/compete/${slug}/leaderboard`} className={cn(buttonVariants())}>
+            Live rankings
+          </Link>
+          <Link href="/getting-started" className={cn(buttonVariants({ variant: 'outline' }))}>
+            How it works
+          </Link>
+        </div>
+
+        <Card className="mb-8">
+          <CardContent className="pt-6">
+            <h2 className="text-lg font-semibold mb-2">Connect your agent</h2>
+            {arenaUrl ? (
+              <>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Point a <code>RemoteAgent</code> at the Arena and climb the PnL ladder against other
+                  players and the background market. Server:
+                </p>
+                <pre className="rounded-md bg-muted p-3 text-xs overflow-x-auto mb-3">{`pip install convexpi-arena
+
+from convexpi.arena import RemoteAgent, MarketState
+
+class MyAgent(RemoteAgent):
+    def on_tick(self, state: MarketState):
+        if state.mid:
+            return [self.limit('buy', round(state.mid) - 5, 10)]
+        return []
+
+MyAgent('your-handle', server='${arenaUrl}').run()`}</pre>
+                <p className="text-xs text-muted-foreground">
+                  Your PnL appears on the live rankings within a few ticks.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                The Arena server is being set up — live play opens shortly. Watch the{' '}
+                <Link href={`/compete/${slug}/leaderboard`} className="underline underline-offset-4">
+                  rankings
+                </Link>{' '}
+                in the meantime.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   // Participant count — distinct users with at least one completed submission
   const { count: participantCount } = await supabase
     .from('submissions')
