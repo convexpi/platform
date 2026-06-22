@@ -5,7 +5,14 @@ import { useRef, useState, useCallback } from 'react'
 import { Play, Loader2, Copy, Check, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
+const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[340px] flex items-center justify-center text-xs text-muted-foreground bg-muted/30">
+      Loading editor…
+    </div>
+  ),
+})
 
 // Pyodide is loaded from the CDN on first run. Bump this to upgrade the runtime.
 const PYODIDE_VERSION = 'v0.26.4'

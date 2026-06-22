@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Next 16 blocks the dev server's client bundles when a page is opened from a non-localhost
+  // origin (e.g. the printed Network URL / LAN IP), which leaves pages server-rendered but never
+  // hydrated. Allow LAN access in dev; add your machine's LAN IP here if it differs.
+  allowedDevOrigins: ['10.150.1.167', '*.local'],
+
   // Provide build-time fallbacks so `npm run build` works without a real Supabase project.
   // Vercel/Railway will override these with actual values at runtime.
   env: {
