@@ -4,10 +4,16 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Menu } from 'lucide-react'
+import { Menu, ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { NotificationBell } from '@/components/notification-bell'
 import { Avatar } from '@/components/avatar'
 import type { User } from '@supabase/supabase-js'
@@ -71,20 +77,33 @@ export function Nav() {
 
   const isActive = (href: string) => pathname.startsWith(href)
 
-  const navLinks = [
-    { href: '/getting-started', label: 'Get started' },
-    { href: '/research',        label: 'Research' },
-    { href: '/compete',         label: 'Compete' },
-    { href: '/anomalies',       label: 'Anomalies' },
-    { href: '/playground',      label: 'Playground' },
-    { href: '/papers',          label: 'Papers' },
-    { href: '/agents',          label: 'Agents' },
-    { href: '/community',       label: 'Community' },
-    ...(user ? [
-      { href: '/dashboard', label: 'Dashboard' },
-      { href: '/tutor',     label: 'Tutor' },
-    ] : []),
+  // Grouped navigation. Dashboard lives only in the right-hand auth area (not duplicated here).
+  const navGroups = [
+    {
+      label: 'Learn',
+      items: [
+        { href: '/getting-started', label: 'Get started' },
+        ...(user ? [{ href: '/tutor', label: 'Tutor' }] : []),
+      ],
+    },
+    {
+      label: 'Research',
+      items: [
+        { href: '/research',  label: 'Factor research' },
+        { href: '/papers',    label: 'Papers' },
+        { href: '/anomalies', label: 'Anomaly graveyard' },
+      ],
+    },
+    {
+      label: 'Practice',
+      items: [
+        { href: '/playground', label: 'Playground' },
+        { href: '/compete',    label: 'Competitions' },
+        { href: '/agents',     label: 'Agent arena' },
+      ],
+    },
   ]
+  const singleLinks = [{ href: '/community', label: 'Community' }]
 
   const handleSignOut = () =>
     supabase.auth.signOut().then(() => (window.location.href = '/'))
@@ -104,12 +123,38 @@ export function Nav() {
         </Link>
 
         {/* Desktop nav links */}
-        <nav className="hidden md:flex items-center gap-4">
-          {navLinks.map(({ href, label }) => (
+        <nav className="hidden md:flex items-center gap-1">
+          {navGroups.map((group) => {
+            const groupActive = group.items.some((i) => isActive(i.href))
+            return (
+              <DropdownMenu key={group.label}>
+                <DropdownMenuTrigger
+                  className={`inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-medium outline-none transition-colors hover:text-primary data-[popup-open]:text-primary ${
+                    groupActive ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  {group.label}
+                  <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-44">
+                  {group.items.map((item) => (
+                    <DropdownMenuItem
+                      key={item.href}
+                      render={<Link href={item.href} />}
+                      className={isActive(item.href) ? 'text-primary' : ''}
+                    >
+                      {item.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          })}
+          {singleLinks.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
+              className={`rounded-md px-2 py-1.5 text-sm font-medium transition-colors hover:text-primary ${
                 isActive(href) ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
@@ -176,15 +221,32 @@ export function Nav() {
               </SheetHeader>
 
               <nav className="mt-6 flex flex-col gap-1">
-                {navLinks.map(({ href, label }) => (
+                {navGroups.map((group) => (
+                  <div key={group.label} className="mb-2">
+                    <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
+                      {group.label}
+                    </p>
+                    {group.items.map(({ href, label }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${
+                          isActive(href) ? 'bg-muted text-primary' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+                {singleLinks.map(({ href, label }) => (
                   <Link
                     key={href}
                     href={href}
                     onClick={() => setMobileOpen(false)}
                     className={`rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${
-                      isActive(href)
-                        ? 'bg-muted text-primary'
-                        : 'text-muted-foreground'
+                      isActive(href) ? 'bg-muted text-primary' : 'text-muted-foreground'
                     }`}
                   >
                     {label}
