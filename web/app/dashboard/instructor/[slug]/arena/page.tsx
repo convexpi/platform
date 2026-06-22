@@ -35,7 +35,7 @@ export default function ArenaManagementPage({
 }: {
   params: { slug: string }
 }) {
-  const [arenaUrl, setArenaUrl]   = useState('ws://localhost:8765')
+  const [arenaUrl, setArenaUrl]   = useState(process.env.NEXT_PUBLIC_ARENA_URL || 'ws://localhost:8765')
   const [adminToken, setAdminToken] = useState('')
   const [state, setState]         = useState<ArenaState>({
     connected: false, tick: 0, agents: 0, observers: 0, lastMessage: '',
