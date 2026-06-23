@@ -13,17 +13,19 @@ export default function PlaygroundPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Playground</h1>
         <p className="text-muted-foreground leading-relaxed">
-          Published anomalies as runnable code — executed in your browser, on real Ken-French factor
-          data. Each example splits the return stream at the paper&apos;s publication year (the
-          McLean &amp; Pontiff test) and asks the only honest question: <em>did the edge survive?</em>{' '}
-          Change the year, swap the factor, or rewrite it entirely, then hit Run.
+          Real strategy replications, executed in your browser. Each example <em>recomputes</em> the
+          strategy from its building blocks — reconstructing the Fama-French factors from the
+          underlying size/value/momentum portfolios, or forming a long-short book by ranking
+          industries each month — rather than reading a finished factor off the shelf. It checks the
+          reconstruction against the published series, then splits at the paper&apos;s publication
+          year (the McLean &amp; Pontiff test) to ask: <em>did the edge survive out of sample?</em>
         </p>
       </div>
       <Playground />
       <p className="mt-6 text-xs text-muted-foreground leading-relaxed">
-        These mirror the executable replications in the course&apos;s benchmark — momentum and trend
-        survive out of sample, value decayed through the 2007–2020 drought, and size went dormant.
-        Don&apos;t take our word for it; the data is right there.
+        Everything runs client-side via Pyodide on real Ken-French data — edit the code and re-run.
+        For a full end-to-end replication on freshly downloaded data (including true single-name
+        cross-sectional strategies), use the <strong>Open in Colab</strong> link on each example.
       </p>
     </div>
   )
