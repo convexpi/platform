@@ -25,6 +25,7 @@ type Result = {
   sharpe_decay: number | null
   turnover: number | null
   net_oos_sharpe: number | null
+  caveat: string | null
   verdict: string
 }
 
@@ -127,6 +128,11 @@ export default async function ReplicationsPage() {
                           </a>
                         ) : r.paper_title}
                       </div>
+                      {r.caveat && (
+                        <div className="text-[11px] text-amber-600 mt-1 leading-snug max-w-md">
+                          ⚠ {r.caveat}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right font-mono text-muted-foreground">{r.pub_year}</td>
                     <td className="px-4 py-3 text-right font-mono text-muted-foreground">{fmt(r.in_sample_sharpe)}</td>

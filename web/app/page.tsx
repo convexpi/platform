@@ -60,8 +60,8 @@ export default async function Home() {
                 Quantitative Finance · Experimental Method · Open Source
               </p>
               <h1 className="font-serif text-5xl lg:text-6xl xl:text-7xl leading-[1.05] text-foreground">
-                Discover what survives{' '}
-                <span className="italic">out&#8209;of&#8209;sample.</span>
+                Discover what works{' '}
+                <span className="italic">in the real world.</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed max-w-xl">
                 An open platform for empirical finance. <strong className="text-foreground font-medium">Learn</strong> the
