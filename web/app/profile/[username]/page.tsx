@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { CopyProfileLink } from './copy-link'
 import { FollowButton } from '@/components/follow-button'
 import { Avatar } from '@/components/avatar'
+import { badgesFor, TIER_STYLE, type RepRow } from '@/lib/reputation'
 import type { GradeReport } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -63,6 +64,27 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     if (r.oos_sharpe != null && (bestSharpe == null || r.oos_sharpe > bestSharpe)) bestSharpe = r.oos_sharpe
     if (r.alphas_discovered) totalAlphasFound += r.alphas_discovered
   }
+
+  // Community reputation (persistent points ledger, aggregated by the contributor_reputation view).
+  // A person can have rows under both their platform user_id and their GitHub handle — merge them.
+  const repOr = [`user_id.eq.${profile.id}`]
+  if (profile.github_username) repOr.push(`github_username.eq.${profile.github_username}`)
+  const { data: repData } = await supabase.from('contributor_reputation').select('*').or(repOr.join(','))
+  let rep: RepRow | null = null
+  for (const row of (repData ?? []) as RepRow[]) {
+    if (!rep) { rep = { ...row } }
+    else {
+      rep.reputation += row.reputation
+      rep.n_contributions += row.n_contributions
+      rep.n_replications += row.n_replications
+      rep.n_wiki += row.n_wiki
+      rep.n_submissions += row.n_submissions
+      rep.n_survivor += row.n_survivor
+      rep.n_ghost += row.n_ghost
+      rep.n_podium += row.n_podium
+    }
+  }
+  const repBadges = rep ? badgesFor(rep) : []
 
   const memberSince = new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
@@ -148,6 +170,36 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           ) : null}
         </div>
       </div>
+
+      {/* Reputation & badges */}
+      {rep && rep.reputation > 0 && (
+        <div className="rounded-xl border border-border bg-card/40 p-4 mb-8 flex items-center gap-5">
+          <div className="text-center shrink-0">
+            <div className="text-2xl font-mono font-bold text-foreground tabular-nums">
+              {rep.reputation.toLocaleString()}
+            </div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">reputation</div>
+          </div>
+          <div className="flex-1 min-w-0">
+            {repBadges.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {repBadges.map(b => (
+                  <span key={b.key} title={b.desc}
+                    className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ring-1 ${TIER_STYLE[b.tier]}`}>
+                    {b.label}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Earning reputation for contributions.</p>
+            )}
+            <Link href="/contributors"
+              className="inline-block text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 mt-2">
+              Community leaderboard →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       {rows.length > 0 && (
