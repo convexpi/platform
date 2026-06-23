@@ -92,7 +92,7 @@ async function fetchPaper(id: string) {
   const db = await createClient()
   const { data } = await db
     .from('papers')
-    .select('id, title, authors, year, journal, doi, arxiv_id, topics, is_oos_paper, wiki_generated_at, abstract, citation_count')
+    .select('id, title, authors, year, journal, doi, arxiv_id, topics, is_oos_paper, wiki_generated_at, wiki_markdown, abstract, citation_count')
     .eq('id', id)
     .single()
   return data
@@ -115,8 +115,11 @@ export default async function PaperPage({ params }: Props) {
   const entry = await fetchPaper(id)
   if (!entry) notFound()
 
-  // Wiki markdown from content repo (null if not generated yet)
-  const wiki = entry.wiki_generated_at ? await loadWiki(id) : null
+  // Wiki markdown: prefer the community-edited file in the content repo, fall back to the
+  // wiki_markdown stored in the database (what the /papers badge reflects).
+  const wiki = entry.wiki_generated_at
+    ? ((await loadWiki(id)) ?? entry.wiki_markdown ?? null)
+    : (entry.wiki_markdown ?? null)
 
   // GitHub-backed wiki editing: edit opens GitHub's editor (fork+PR for
   // non-collaborators), history is the Wikipedia-style revision log with diffs.
