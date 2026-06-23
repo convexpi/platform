@@ -141,8 +141,8 @@ export default async function Home() {
                 title: 'Improve the commons',
                 desc: 'Everything is open: edit a paper wiki, submit a strategy replication by pull request, or build on the packages that power the platform.',
                 links: [
-                  { t: 'Replication library', href: `${ORG}/replications`, ext: true },
-                  { t: 'Edit a paper wiki', href: '/papers' },
+                  { t: 'Replication library', href: '/replications', ext: false },
+                  { t: 'Edit a paper wiki', href: '/papers', ext: false },
                   { t: 'All repos on GitHub', href: ORG, ext: true },
                 ],
                 cta: { t: 'Contribute on GitHub', href: ORG, ext: true },
@@ -261,8 +261,8 @@ export default async function Home() {
                   </Link>{' '}
                   dataset ({osapCount} predictors, 1926–2024) plus Kenneth French&apos;s flagship factors —
                   alongside a library of thousands of finance papers with structured wikis, and an open
-                  package of <a href={`${ORG}/replications`} target="_blank" rel="noopener noreferrer"
-                    className="underline underline-offset-4 hover:text-foreground">reference replications</a>{' '}
+                  package of <Link href="/replications"
+                    className="underline underline-offset-4 hover:text-foreground">reference replications</Link>{' '}
                   that recompute each strategy and score it out of sample. Some effects survive. Most attenuate —
                   the signature of data mining rather than genuine risk premia.
                 </p>
@@ -324,10 +324,10 @@ export default async function Home() {
                   className="text-sm font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
                   Research papers + wikis →
                 </Link>
-                <a href={`${ORG}/replications`} target="_blank" rel="noopener noreferrer"
+                <Link href="/replications"
                   className="text-sm font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
                   Reference replications →
-                </a>
+                </Link>
               </div>
             </div>
           </section>

@@ -89,9 +89,10 @@ export function Nav() {
     {
       label: 'Research',
       items: [
-        { href: '/research',  label: 'Factor research' },
-        { href: '/papers',    label: 'Papers' },
-        { href: '/anomalies', label: 'Anomaly graveyard' },
+        { href: '/research',     label: 'Factor research' },
+        { href: '/papers',       label: 'Papers' },
+        { href: '/anomalies',    label: 'Anomaly graveyard' },
+        { href: '/replications', label: 'Replications' },
       ],
     },
     {
