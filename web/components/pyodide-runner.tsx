@@ -52,29 +52,24 @@ _plt.close("all")
 _imgs
 `
 
-const DEFAULT_CODE = `# Momentum factor (Jegadeesh & Titman, 1993) — run it OUT OF SAMPLE.
-# Split the return stream at the publication year (the McLean & Pontiff test)
-# and ask the only honest question: did the edge survive?
-import pandas as pd, numpy as np
-import matplotlib.pyplot as plt
+const DEFAULT_CODE = `# Value (HML) — RECONSTRUCTED from the 6 size x book-to-market portfolios.
+import pandas as pd, numpy as np, matplotlib.pyplot as plt
 from pyodide.http import open_url
 
-df = pd.read_csv(open_url("/data/ff_momentum_daily.csv"))
-df["date"] = pd.to_datetime(df["date"], format="%Y%m%d")
-r = (df.set_index("date")["Mom"] / 100).dropna()   # Ken-French data is in percent
+p = pd.read_csv(open_url("/data/ff_6_size_bm_daily.csv"))
+p["date"] = pd.to_datetime(p["date"], format="%Y%m%d")
+p = (p.set_index("date") / 100).dropna()
 
-pub = 1993                                          # <- change me: try 1990, 2005, ...
-yrs = r.index.year
-ins, oos = r[yrs < pub], r[yrs >= pub]
+# HML = (avg of the two VALUE corners) - (avg of the two GROWTH corners)
+HML = 0.5*(p["SMALL HiBM"] + p["BIG HiBM"]) - 0.5*(p["SMALL LoBM"] + p["BIG LoBM"])
 
-def sharpe(x): return np.sqrt(252) * x.mean() / x.std()
+pub = 1993
+yrs = HML.index.year
+ins, oos = HML[yrs < pub], HML[yrs >= pub]
+sharpe = lambda x: np.sqrt(252) * x.mean() / x.std()
+print(f"IS Sharpe (pre-{pub}): {sharpe(ins):.2f}    OOS Sharpe: {sharpe(oos):.2f}")
 
-print(f"In-sample  Sharpe (pre-{pub}):   {sharpe(ins):.2f}")
-print(f"Out-of-sample Sharpe (>= {pub}):  {sharpe(oos):.2f}")
-print(f"Decay: {1 - sharpe(oos)/sharpe(ins):.0%} of the edge lost after publication")
-
-(1 + r).cumprod().plot(logy=True, figsize=(8, 4),
-                       title="Momentum — growth of $1 (log scale)")
+(1 + HML).cumprod().plot(logy=True, figsize=(8, 4), title="HML — recomputed from 6 portfolios")
 plt.axvline(pd.Timestamp(f"{pub}-01-01"), color="crimson", ls="--", label="published")
 plt.legend(); plt.tight_layout(); plt.show()
 `
