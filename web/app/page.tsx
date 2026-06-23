@@ -4,7 +4,6 @@ import { join } from 'path'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { HeroViz } from '@/components/hero-viz'
-import type { Cohort } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,17 +34,11 @@ function loadAnomalyStats(): AnomalyStat[] {
   }
 }
 
+const ORG = 'https://github.com/convexpi'
+
 export default async function Home() {
   const supabase = await createClient()
   const anomalies = loadAnomalyStats()
-
-  const { data: competitions } = await supabase
-    .from('cohorts')
-    .select('*')
-    .eq('type', 'competition')
-    .eq('visibility', 'public')
-    .order('created_at', { ascending: false })
-    .limit(4)
 
   const { data: demoRows } = await supabase
     .from('grade_reports')
@@ -64,15 +57,17 @@ export default async function Home() {
           <div className="grid lg:grid-cols-[1fr_480px] gap-16 items-center">
             <div className="flex flex-col gap-7 max-w-2xl">
               <p className="text-xs font-semibold tracking-[0.2em] text-[#C9A34E] uppercase">
-                Quantitative Finance · Experimental Method
+                Quantitative Finance · Experimental Method · Open Source
               </p>
               <h1 className="font-serif text-5xl lg:text-6xl xl:text-7xl leading-[1.05] text-foreground">
                 Discover what survives{' '}
                 <span className="italic">out&#8209;of&#8209;sample.</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed max-w-xl">
-                Write a trading strategy. Submit it to a hidden holdout market.
-                Learn whether your signal is real or noise — the same way empirical research does.
+                An open platform for empirical finance. <strong className="text-foreground font-medium">Learn</strong> the
+                methods, <strong className="text-foreground font-medium">experiment</strong> against hidden
+                holdouts and live markets, and <strong className="text-foreground font-medium">contribute</strong> to
+                a shared research commons — code, replications, and wikis, all in the open.
               </p>
               <blockquote className="border-l-2 border-[#C9A34E] pl-4 text-muted-foreground italic text-base">
                 Reality is the final test set.
@@ -84,10 +79,10 @@ export default async function Home() {
                     Begin with Mission 1
                   </Button>
                 </Link>
-                <Link href="/research">
+                <Link href="/playground">
                   <Button size="lg" variant="outline"
                     className="border-border font-medium px-6">
-                    Research library
+                    Run the playground
                   </Button>
                 </Link>
               </div>
@@ -99,144 +94,98 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── Open source strip ─────────────────────────────────────────── */}
-      <section className="border-b border-border bg-[#0B1F3A] text-white">
-        <div className="container mx-auto px-4 py-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold tracking-[0.15em] text-white/50 uppercase">Open source</span>
-              <span className="hidden sm:block w-px h-4 bg-white/20" />
-              <code className="text-sm font-mono bg-white/10 text-white/90 px-2.5 py-1 rounded">
-                pip install convexpi-lab
-              </code>
-              <span className="text-xs text-white/50">MIT License</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <a
-                href="https://github.com/convexpi/lab"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition-colors"
-              >
-                <GitHubIcon className="w-3.5 h-3.5" />
-                Source on GitHub
-              </a>
-              <a
-                href="https://pypi.org/project/convexpi-lab/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition-colors"
-              >
-                <PyPIIcon className="w-3.5 h-3.5" />
-                convexpi-lab on PyPI
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Research artifacts ────────────────────────────────────────── */}
+      {/* ── Three pathways ────────────────────────────────────────────── */}
       <section className="border-b border-border bg-secondary/40">
         <div className="container mx-auto px-4 py-16">
-          <div className="grid md:grid-cols-3 gap-10">
-
-            {/* Competitions */}
-            <div>
-              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-5">
-                Open Problems
-              </p>
-              <div className="flex flex-col divide-y divide-border">
-                {competitions && competitions.length > 0
-                  ? (competitions as Cohort[]).map(c => (
-                    <div key={c.id} className="py-3 flex items-center justify-between gap-4">
-                      <span className="text-sm text-foreground font-medium leading-snug">{c.name}</span>
-                      <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
-                        c.status === 'active'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-secondary text-muted-foreground'
-                      }`}>{c.status}</span>
-                    </div>
-                  ))
-                  : [
-                    { name: 'US Equity Alpha Challenge', participants: 324 },
-                    { name: 'Market Making Arena', participants: 118 },
-                    { name: 'Macro Forecasting Challenge', participants: 87 },
-                  ].map(c => (
-                    <div key={c.name} className="py-3 flex items-center justify-between gap-4">
-                      <span className="text-sm text-foreground font-medium">{c.name}</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">{c.participants}</span>
-                    </div>
-                  ))
-                }
-                <div className="pt-4">
-                  <Link href="/compete"
-                    className="text-xs font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
-                    All open problems →
-                  </Link>
+          <div className="max-w-2xl mb-10">
+            <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-3">
+              Three ways in
+            </p>
+            <h2 className="font-serif text-3xl text-foreground leading-snug">
+              Learn it. Experiment with it. Contribute to it.
+            </h2>
+            <p className="text-muted-foreground mt-3 leading-relaxed">
+              ConvexPi is a curriculum, an open-source research toolkit, and a community — all built
+              around the same question: does a signal survive once the data is no longer yours to fit?
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                label: 'Learn',
+                accent: '#0B1F3A',
+                title: 'Read the field, honestly',
+                desc: 'A simulation-first curriculum and a research library that is candid about which anomalies survive and which decayed after publication.',
+                links: [
+                  { t: 'Curriculum — 6 missions', href: '/curriculum', ext: false },
+                  { t: 'Research papers + wikis', href: '/papers', ext: false },
+                  { t: 'Anomaly graveyard', href: '/anomalies', ext: false },
+                ],
+                cta: { t: 'Begin Mission 1', href: '/getting-started', ext: false },
+              },
+              {
+                label: 'Experiment',
+                accent: '#C9A34E',
+                title: 'Run it — or compete',
+                desc: 'Recompute strategies in your browser, test them on a hidden holdout, and pit live agents against each other in a simulated market.',
+                links: [
+                  { t: 'Playground (runs in-browser)', href: '/playground', ext: false },
+                  { t: 'Open competitions', href: '/compete', ext: false },
+                  { t: 'Agent arena', href: '/agents', ext: false },
+                ],
+                cta: { t: 'Open the playground', href: '/playground', ext: false },
+              },
+              {
+                label: 'Contribute',
+                accent: '#15803d',
+                title: 'Improve the commons',
+                desc: 'Everything is open: edit a paper wiki, submit a strategy replication by pull request, or build on the packages that power the platform.',
+                links: [
+                  { t: 'Replication library', href: `${ORG}/replications`, ext: true },
+                  { t: 'Edit a paper wiki', href: '/papers' },
+                  { t: 'All repos on GitHub', href: ORG, ext: true },
+                ],
+                cta: { t: 'Contribute on GitHub', href: ORG, ext: true },
+              },
+            ].map(p => (
+              <div key={p.label}
+                className="flex flex-col gap-4 p-6 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow">
+                <div>
+                  <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-2"
+                    style={{ color: p.accent }}>{p.label}</p>
+                  <h3 className="text-base font-semibold text-foreground mb-2">{p.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{p.desc}</p>
+                  <div className="flex flex-col divide-y divide-border border-t border-border">
+                    {p.links.map(l => (
+                      l.ext ? (
+                        <a key={l.t} href={l.href} target="_blank" rel="noopener noreferrer"
+                          className="py-2 text-sm text-foreground hover:text-primary transition-colors">
+                          {l.t} ↗
+                        </a>
+                      ) : (
+                        <Link key={l.t} href={l.href}
+                          className="py-2 text-sm text-foreground hover:text-primary transition-colors">
+                          {l.t}
+                        </Link>
+                      )
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Research */}
-            <div>
-              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-5">
-                Research Library
-              </p>
-              <div className="flex flex-col divide-y divide-border">
-                {[
-                  { title: 'Momentum', href: '/research/momentum', note: 'Strong OOS survival' },
-                  { title: 'Value', href: '/research/value', note: 'Mixed OOS evidence' },
-                  { title: 'Quality / Profitability', href: '/research/quality', note: 'Strong OOS survival' },
-                  { title: 'Factor Zoo & Replication Crisis', href: '/research/factor-zoo', note: 'Why most factors fail' },
-                ].map(item => (
-                  <div key={item.href} className="py-3">
-                    <Link href={item.href}
-                      className="text-sm text-foreground font-medium leading-snug hover:text-primary transition-colors">
-                      {item.title}
+                <div className="mt-auto pt-1">
+                  {p.cta.ext ? (
+                    <a href={p.cta.href} target="_blank" rel="noopener noreferrer"
+                      className="text-xs font-semibold transition-colors hover:opacity-70" style={{ color: p.accent }}>
+                      {p.cta.t} →
+                    </a>
+                  ) : (
+                    <Link href={p.cta.href}
+                      className="text-xs font-semibold transition-colors hover:opacity-70" style={{ color: p.accent }}>
+                      {p.cta.t} →
                     </Link>
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.note}</p>
-                  </div>
-                ))}
-                <div className="pt-4">
-                  <Link href="/research"
-                    className="text-xs font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
-                    Full research library →
-                  </Link>
+                  )}
                 </div>
               </div>
-            </div>
-
-            {/* Courses */}
-            <div>
-              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-5">
-                Curriculum — 6 Missions
-              </p>
-              <div className="flex flex-col divide-y divide-border">
-                {[
-                  { n: '01', title: 'Overfitting',        note: 'IS vs OOS Sharpe · hidden holdout' },
-                  { n: '02', title: 'Market Maker',       note: 'Spread capture · inventory risk' },
-                  { n: '03', title: 'Alpha Discovery',    note: 'Factor construction · signal decay' },
-                  { n: '04', title: 'Strategy Library',   note: 'Replication · the factor zoo' },
-                  { n: '05', title: 'Real Data',          note: 'Survivorship bias · stale prices' },
-                  { n: '06', title: 'Advanced Agents',    note: 'RL execution · end-to-end strategy' },
-                ].map(c => (
-                  <div key={c.n} className="py-2.5 flex items-start gap-2.5">
-                    <span className="text-xs font-mono text-muted-foreground/60 mt-0.5 shrink-0">{c.n}</span>
-                    <div>
-                      <p className="text-sm text-foreground font-medium leading-snug">{c.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{c.note}</p>
-                    </div>
-                  </div>
-                ))}
-                <div className="pt-4">
-                  <Link href="/curriculum"
-                    className="text-xs font-medium text-[#C9A34E] hover:text-[#b8920d] transition-colors">
-                    Full syllabus →
-                  </Link>
-                </div>
-              </div>
-            </div>
-
+            ))}
           </div>
         </div>
       </section>
@@ -291,7 +240,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── Factor anomaly evidence ───────────────────────────────────── */}
+      {/* ── Research & replication (flagship) ─────────────────────────── */}
       {anomalies.length > 0 && (() => {
         const frenchFactors = anomalies.filter(a => !a.source || a.source === 'french')
         const osapCount = anomalies.filter(a => a.source === 'osap').length
@@ -300,20 +249,22 @@ export default async function Home() {
             <div className="container mx-auto px-4 py-20">
               <div className="max-w-3xl mb-10">
                 <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
-                  Replication Evidence
+                  Research &amp; Replication
                 </p>
                 <h2 className="font-serif text-3xl text-foreground mb-4">
-                  Most published anomalies decay out-of-sample.
+                  The factor zoo is a graveyard.
                 </h2>
                 <p className="text-muted-foreground leading-relaxed mb-3">
-                  We track {anomalies.length} equity factor anomalies pre- and post-publication
-                  using the{' '}
+                  We track {anomalies.length} equity anomalies pre- and post-publication using the{' '}
                   <Link href="/anomalies" className="underline underline-offset-4 hover:text-foreground">
                     Open Source Asset Pricing
                   </Link>{' '}
-                  dataset ({osapCount} predictors, 1926–2024) plus Kenneth French&apos;s flagship factors.
-                  Some effects survive peer replication. Most attenuate sharply — a pattern
-                  consistent with data mining rather than genuine risk premia.
+                  dataset ({osapCount} predictors, 1926–2024) plus Kenneth French&apos;s flagship factors —
+                  alongside a library of thousands of finance papers with structured wikis, and an open
+                  package of <a href={`${ORG}/replications`} target="_blank" rel="noopener noreferrer"
+                    className="underline underline-offset-4 hover:text-foreground">reference replications</a>{' '}
+                  that recompute each strategy and score it out of sample. Some effects survive. Most attenuate —
+                  the signature of data mining rather than genuine risk premia.
                 </p>
               </div>
               <div className="overflow-x-auto">
@@ -364,23 +315,161 @@ export default async function Home() {
                   </tbody>
                 </table>
               </div>
-              <div className="mt-5 flex items-center gap-4">
+              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
                 <Link href="/anomalies"
                   className="text-sm font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
                   All {anomalies.length} anomalies →
                 </Link>
-                <span className="text-xs text-muted-foreground">
-                  filter by category, status, data type
-                </span>
+                <Link href="/papers"
+                  className="text-sm font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
+                  Research papers + wikis →
+                </Link>
+                <a href={`${ORG}/replications`} target="_blank" rel="noopener noreferrer"
+                  className="text-sm font-medium text-[#C9A34E] hover:text-[#b8922d] transition-colors">
+                  Reference replications →
+                </a>
               </div>
             </div>
           </section>
         )
       })()}
 
-      {/* ── Live leaderboard ──────────────────────────────────────────── */}
+      {/* ── Open-source ecosystem ─────────────────────────────────────── */}
+      <section className="border-b border-border bg-[#0B1F3A] text-white">
+        <div className="container mx-auto px-4 py-20">
+          <div className="max-w-2xl mb-10">
+            <p className="text-xs font-semibold tracking-[0.15em] text-white/50 uppercase mb-4">
+              Open Source
+            </p>
+            <h2 className="font-serif text-3xl mb-4 leading-snug">
+              ConvexPi is not just a website. It&apos;s an open stack.
+            </h2>
+            <p className="text-white/70 leading-relaxed">
+              The same tools that power the curriculum — synthetic markets, walk-forward backtests,
+              hidden-holdout grading, replication, and a live exchange simulator — are open-source.
+              Inspect the machinery, run it yourself, or extend it.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { repo: 'lab', desc: 'Synthetic equity panels, walk-forward backtests, hidden-holdout grading, anomaly replication, real-data mode.' },
+              { repo: 'arena', desc: 'Discrete-time limit-order-book simulator for deploying live trading and market-making agents.' },
+              { repo: 'replications', desc: 'Verified reference replications of canonical strategies — recomputed from building blocks, scored out of sample, CI-checked.' },
+              { repo: 'content', desc: 'Community-edited paper wikis and research notes — anyone can suggest an edit via GitHub.' },
+              { repo: 'missions', desc: 'The mission notebooks and assignments behind the curriculum.' },
+              { repo: 'platform', desc: 'The web application, grader, and research library that runs convexpi.ai.' },
+            ].map(r => (
+              <a key={r.repo} href={`${ORG}/${r.repo}`} target="_blank" rel="noopener noreferrer"
+                className="group flex flex-col gap-2 p-5 rounded-lg border border-white/15 bg-white/[0.03] hover:bg-white/[0.07] transition-colors">
+                <div className="flex items-center gap-2">
+                  <GitHubIcon className="w-3.5 h-3.5 text-white/60" />
+                  <code className="text-sm font-mono text-white">convexpi/{r.repo}</code>
+                  <span className="ml-auto text-white/40 group-hover:text-white/80 transition-colors">↗</span>
+                </div>
+                <p className="text-xs text-white/60 leading-relaxed">{r.desc}</p>
+              </a>
+            ))}
+          </div>
+          <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <code className="text-sm font-mono bg-white/10 text-white/90 px-3 py-1.5 rounded">
+              pip install convexpi-lab
+            </code>
+            <a href={ORG} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors">
+              <GitHubIcon className="w-4 h-4" /> Browse the GitHub organization →
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Experiment environments ───────────────────────────────────── */}
+      <section className="border-b border-border">
+        <div className="container mx-auto px-4 py-20">
+          <div className="max-w-xl mb-12">
+            <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
+              Experiment
+            </p>
+            <h2 className="font-serif text-3xl text-foreground">
+              From a browser tab to a live market.
+            </h2>
+            <p className="text-muted-foreground mt-3 leading-relaxed">
+              Three ways to put a strategy to the test — each grading the same question.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                label: 'Playground',
+                accentColor: '#C9A34E',
+                title: 'Run it in your browser',
+                desc: 'Recompute real strategies — reconstruct the Fama-French factors from their building blocks, form a long-short book — entirely client-side, then test out of sample. No install.',
+                bullets: [
+                  'Python in the browser via Pyodide',
+                  'Recomputes strategies, not finished factors',
+                  'Open in Colab for full, live-data runs',
+                ],
+                href: '/playground',
+                cta: 'Open the playground',
+              },
+              {
+                label: 'Lab',
+                accentColor: '#0B1F3A',
+                title: 'Alpha Discovery Lab',
+                desc: 'Write strategies against a synthetic equity panel with planted factor signals. Six structured missions take you from naive overfitting to disciplined out-of-sample evaluation.',
+                bullets: [
+                  'Python-native (pandas, numpy, scikit-learn)',
+                  'IS / OOS breakdown on every submission',
+                  'Hidden-holdout grading you cannot game',
+                ],
+                href: '/getting-started',
+                cta: 'Begin Mission 1',
+              },
+              {
+                label: 'Arena',
+                accentColor: '#15803d',
+                title: 'Live Market Arena',
+                desc: 'Deploy agents that submit live orders into a limit-order-book simulation. Study adverse selection, inventory risk, and spread dynamics under competitive pressure.',
+                bullets: [
+                  'WebSocket agent API — connect in Python',
+                  'Ongoing open ladder + rolling seasons',
+                  'Survival score rewards robustness over Sharpe',
+                ],
+                href: '/compete',
+                cta: 'Browse open competitions',
+              },
+            ].map(p => (
+              <div key={p.label}
+                className="flex flex-col gap-4 p-6 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow">
+                <div>
+                  <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-2"
+                    style={{ color: p.accentColor }}>{p.label}</p>
+                  <h3 className="text-base font-semibold text-foreground mb-3">{p.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{p.desc}</p>
+                  <ul className="flex flex-col gap-1.5">
+                    {p.bullets.map(b => (
+                      <li key={b} className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <span className="mt-1.5 w-1 h-1 rounded-full shrink-0 bg-border" />
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="mt-auto pt-3 border-t border-border">
+                  <Link href={p.href}
+                    className="text-xs font-semibold transition-colors hover:opacity-70"
+                    style={{ color: p.accentColor }}>
+                    {p.cta} →
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Worked example: leaderboard ───────────────────────────────── */}
       {demoLeaderboard.length > 0 && (
-        <section className="border-b border-border">
+        <section className="border-b border-border bg-secondary/40">
           <div className="container mx-auto px-4 py-20">
             <div className="grid lg:grid-cols-[1fr_440px] gap-14 items-start">
               <div>
@@ -444,203 +533,71 @@ export default async function Home() {
         </section>
       )}
 
-      {/* ── Platform ──────────────────────────────────────────────────── */}
-      <section className="border-b border-border bg-secondary/40">
-        <div className="container mx-auto px-4 py-20">
-          <div className="max-w-xl mb-12">
-            <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
-              Learning Environments
-            </p>
-            <h2 className="font-serif text-3xl text-foreground">
-              Three environments. One question.
-            </h2>
-            <p className="text-muted-foreground mt-3 leading-relaxed">
-              Does your strategy generalise beyond the data used to build it?
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                label: 'Lab',
-                accentColor: '#0B1F3A',
-                title: 'Alpha Discovery Lab',
-                desc: 'Write strategies against a synthetic equity panel with embedded factor signals. Six structured missions take you from naive overfitting to disciplined out-of-sample evaluation.',
-                bullets: [
-                  'Python-native (pandas, numpy, scikit-learn)',
-                  'IS / OOS breakdown on every submission',
-                  'Six missions: foundations through ML methods',
-                ],
-                href: '/getting-started',
-                cta: 'Begin Mission 1',
-              },
-              {
-                label: 'Arena',
-                accentColor: '#C9A34E',
-                title: 'Live Market Arena',
-                desc: 'Deploy agents that submit live orders to a limit-order-book simulation running in real time. Study adverse selection, inventory risk, and spread dynamics under competitive pressure.',
-                bullets: [
-                  'WebSocket agent API — connect in Python',
-                  'Inventory risk, spread capture, adverse selection',
-                  'Survival score measures robustness over Sharpe',
-                ],
-                href: '/compete',
-                cta: 'Browse open problems',
-              },
-              {
-                label: 'Courses',
-                accentColor: '#6B7280',
-                title: 'Instructor Cohorts',
-                desc: 'Private cohorts for classroom settings. Assign missions as structured problem sets, grade via OOS Sharpe, and export gradebooks. Built for university courses.',
-                bullets: [
-                  'Private leaderboards with submission deadlines',
-                  'Instructor dashboard and gradebook export',
-                  'University of Cincinnati — Fall 2026 cohort active',
-                ],
-                href: '/classroom/new',
-                cta: 'Create a cohort',
-              },
-            ].map(p => (
-              <div key={p.label}
-                className="flex flex-col gap-4 p-6 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow">
-                <div>
-                  <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-2"
-                    style={{ color: p.accentColor }}>{p.label}</p>
-                  <h3 className="text-base font-semibold text-foreground mb-3">{p.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{p.desc}</p>
-                  <ul className="flex flex-col gap-1.5">
-                    {p.bullets.map(b => (
-                      <li key={b} className="flex items-start gap-2 text-xs text-muted-foreground">
-                        <span className="mt-1.5 w-1 h-1 rounded-full shrink-0 bg-border" />
-                        {b}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="mt-auto pt-3 border-t border-border">
-                  <Link href={p.href}
-                    className="text-xs font-semibold transition-colors hover:opacity-70"
-                    style={{ color: p.accentColor }}>
-                    {p.cta} →
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Open source detail ────────────────────────────────────────── */}
+      {/* ── Contribute / community ────────────────────────────────────── */}
       <section className="border-b border-border">
         <div className="container mx-auto px-4 py-20">
-          <div className="grid md:grid-cols-2 gap-12 items-start">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
-                Open Source
-              </p>
-              <h2 className="font-serif text-3xl text-foreground mb-5 leading-snug">
-                Use it in your own research.
-              </h2>
-              <p className="text-muted-foreground leading-relaxed mb-5">
-                <code className="text-sm font-mono bg-muted px-1.5 py-0.5 rounded">convexpi-lab</code> is
-                MIT-licensed and available on PyPI. Use it to run the synthetic market locally,
-                build your own backtesting experiments, or extend it for new research questions.
-                The full source is on GitHub.
-              </p>
-              <div className="flex flex-col gap-3 mb-6">
-                <div className="rounded-lg bg-muted p-4 font-mono text-sm">
-                  <span className="text-muted-foreground select-none">$ </span>
-                  pip install convexpi-lab
-                </div>
-                <div className="rounded-lg bg-muted p-4 font-mono text-sm">
-                  <span className="text-muted-foreground select-none">{'>>> '}</span>
-                  from convexpi.lab import SyntheticMarket, SimpleBacktest
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <a
-                  href="https://github.com/convexpi/lab"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <GitHubIcon className="w-3.5 h-3.5" />
-                    GitHub
-                  </Button>
-                </a>
-                <a
-                  href="https://pypi.org/project/convexpi-lab/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <PyPIIcon className="w-3.5 h-3.5" />
-                    PyPI
-                  </Button>
-                </a>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              {[
-                { label: 'SyntheticMarket', desc: 'Generates reproducible equity panels with planted factor signals and configurable noise. Deterministic by seed — grader and student see the same market structure, different realisations.' },
-                { label: 'SimpleBacktest', desc: 'Long-short backtester that calls your strategy daily and reports IS Sharpe, OOS Sharpe, max drawdown, and turnover. Designed for the predict(features) interface.' },
-                { label: 'Grader', desc: 'Evaluates strategies on a hidden holdout. Measures alpha discovery — how much of the planted signal your strategy recovered — alongside standard performance metrics.' },
-                { label: 'RealDataMarket', desc: 'Wraps yfinance and Fama-French data to run the same backtesting workflow on live equity data. Used in Mission 5.' },
-              ].map(item => (
-                <div key={item.label} className="flex items-start gap-3 p-4 rounded-lg border bg-card/40">
-                  <div>
-                    <p className="text-sm font-mono font-medium text-foreground">{item.label}</p>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="max-w-2xl mb-12">
+            <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
+              Contribute
+            </p>
+            <h2 className="font-serif text-3xl text-foreground mb-4 leading-snug">
+              Built in the open, improved together.
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Finance education usually hides the grader, the data, and the benchmark. ConvexPi does
+              the opposite — and invites you to make it better. Every wiki, replication, and result is
+              public and editable.
+            </p>
           </div>
-        </div>
-      </section>
-
-      {/* ── Community ─────────────────────────────────────────────────── */}
-      <section className="border-b border-border bg-secondary/40">
-        <div className="container mx-auto px-4 py-20">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-4">
-                Community
-              </p>
-              <h2 className="font-serif text-3xl text-foreground mb-5 leading-snug">
-                Learn in the open. Follow the work.
-              </h2>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                Every submission is graded and its OOS result published.
-                Follow other researchers to see their results as they come in.
-                Share your code on GitHub so others can understand your approach — the same norm as open science.
-              </p>
-              <div className="flex gap-3">
-                <Link href="/community">
-                  <Button className="bg-[#0B1F3A] hover:bg-[#0B1F3A]/90 text-white">
-                    Browse researchers
-                  </Button>
-                </Link>
-                <Link href="/research">
-                  <Button variant="outline">Research library</Button>
-                </Link>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              {
+                title: 'Edit a paper wiki',
+                desc: 'Every paper page has a structured, community-maintained wiki. Suggest an edit on GitHub — the revision history is a Wikipedia-style log.',
+                cta: 'Browse papers', href: '/papers', ext: false,
+              },
+              {
+                title: 'Submit a replication',
+                desc: 'Add a strategy to the open replication library. Recompute it from building blocks, score it out of sample; CI checks it reproduces, then a maintainer merges your PR.',
+                cta: 'Contribution guide', href: `${ORG}/replications/blob/main/CONTRIBUTING.md`, ext: true,
+              },
+              {
+                title: 'Enter a competition',
+                desc: 'An ongoing open ladder and rolling monthly seasons. Submit a strategy or a live agent and see your honest out-of-sample result on the public leaderboard.',
+                cta: 'Open competitions', href: '/compete', ext: false,
+              },
+              {
+                title: 'Build on the packages',
+                desc: 'The Lab, Arena, and replication toolkits are MIT-licensed. Use them in your own research or course, and send improvements upstream.',
+                cta: 'GitHub organization', href: ORG, ext: true,
+              },
+              {
+                title: 'Follow the work',
+                desc: 'Every submission is graded and its OOS result published. Follow other researchers to see results land in your feed as they come in.',
+                cta: 'Browse researchers', href: '/community', ext: false,
+              },
+              {
+                title: 'Teach with it',
+                desc: 'Run a private cohort: assign missions as problem sets, grade on hidden-holdout Sharpe, and export gradebooks. A University of Cincinnati cohort runs in Fall 2026.',
+                cta: 'Create a cohort', href: '/classroom/new', ext: false,
+              },
+            ].map(c => (
+              <div key={c.title} className="flex flex-col gap-2 p-5 rounded-lg border border-border bg-card/40">
+                <h3 className="text-sm font-semibold text-foreground">{c.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">{c.desc}</p>
+                {c.ext ? (
+                  <a href={c.href} target="_blank" rel="noopener noreferrer"
+                    className="text-xs font-semibold text-[#C9A34E] hover:text-[#b8922d] transition-colors mt-1">
+                    {c.cta} ↗
+                  </a>
+                ) : (
+                  <Link href={c.href}
+                    className="text-xs font-semibold text-[#C9A34E] hover:text-[#b8922d] transition-colors mt-1">
+                    {c.cta} →
+                  </Link>
+                )}
               </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              {[
-                { label: 'Follow researchers', desc: 'See their submissions and OOS Sharpe results in your activity feed as they are graded.' },
-                { label: 'Share your methodology', desc: 'Link a GitHub repository to your submission so others can study your approach and build on it.' },
-                { label: 'Research library', desc: '9 factor deep-dives with key papers, OOS survival evidence, and the missions that explore each idea.' },
-                { label: 'Replication tracker', desc: 'Pre- and post-publication Sharpe ratios for canonical equity anomalies tracked against live data.' },
-              ].map(item => (
-                <div key={item.label} className="flex items-start gap-3 p-3 rounded-lg border bg-card/40">
-                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{item.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -650,23 +607,28 @@ export default async function Home() {
         <div className="container mx-auto px-4 py-24">
           <div className="max-w-2xl">
             <h2 className="font-serif text-4xl lg:text-5xl text-foreground mb-5 leading-snug">
-              Does your model generalise?
+              Start a mission, run the code, or contribute.
             </h2>
             <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-              Mission 1 takes about thirty minutes. You will build a strategy,
-              see it score well in-sample, then watch it fail out-of-sample — and understand why.
+              Whether you want to learn quantitative finance, test a signal of your own, or help build
+              an open research commons — there is a door for you. Mission 1 takes about thirty minutes.
             </p>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <Link href="/getting-started">
                 <Button size="lg"
                   className="bg-[#0B1F3A] hover:bg-[#0B1F3A]/90 text-white font-medium px-8">
                   Begin Mission 1
                 </Button>
               </Link>
-              <a href="https://github.com/convexpi/lab" target="_blank" rel="noopener noreferrer">
+              <Link href="/playground">
+                <Button size="lg" variant="outline" className="font-medium px-8">
+                  Run the playground
+                </Button>
+              </Link>
+              <a href={ORG} target="_blank" rel="noopener noreferrer">
                 <Button size="lg" variant="outline" className="font-medium px-8 gap-2">
                   <GitHubIcon className="w-4 h-4" />
-                  View source
+                  Contribute on GitHub
                 </Button>
               </a>
             </div>
@@ -689,14 +651,6 @@ function GitHubIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-    </svg>
-  )
-}
-
-function PyPIIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12.001 0C5.928 0 6.31 2.578 6.31 2.578l.007 2.67h5.784v.803H3.96S0 5.595 0 11.74c0 6.146 3.403 5.927 3.403 5.927h2.031v-2.85s-.11-3.403 3.347-3.403h5.763s3.239.052 3.239-3.13V3.19S18.28 0 12.001 0zM8.85 1.843a1.01 1.01 0 110 2.022 1.01 1.01 0 010-2.022zM11.999 24c6.073 0 5.691-2.578 5.691-2.578l-.007-2.67h-5.784v-.803h8.141S24 18.405 24 12.26c0-6.146-3.403-5.927-3.403-5.927h-2.031v2.85s.11 3.403-3.347 3.403H9.456s-3.239-.052-3.239 3.13V20.81S5.72 24 12 24zm3.151-1.843a1.01 1.01 0 110-2.022 1.01 1.01 0 010 2.022z" />
     </svg>
   )
 }
