@@ -27,6 +27,16 @@ type Result = {
   net_oos_sharpe: number | null
   caveat: string | null
   verdict: string
+  osap_acronym: string | null
+  osap_correlation: number | null
+  replication_quality: string | null
+}
+
+const OSAP_STYLE: Record<string, string> = {
+  clear: 'bg-emerald-100 text-emerald-700',
+  partial: 'bg-amber-100 text-amber-700',
+  weak: 'bg-slate-100 text-slate-600',
+  unverified: 'bg-slate-50 text-slate-400',
 }
 
 async function loadResults(): Promise<Result[]> {
@@ -103,6 +113,7 @@ export default async function ReplicationsPage() {
                 <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">OOS</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">Decay</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">Verdict</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase" title="Correlation of our reconstruction with the OSAP single-name long-short returns (different construction, so 0.4–0.8 is a genuine match)">vs OSAP</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">Run</th>
               </tr>
             </thead>
@@ -148,6 +159,16 @@ export default async function ReplicationsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
+                      {r.osap_correlation != null ? (
+                        <span title={`${r.replication_quality} match with OSAP ${r.osap_acronym ?? ''} (r = ${r.osap_correlation.toFixed(2)})`}
+                          className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${OSAP_STYLE[r.replication_quality ?? 'unverified'] ?? OSAP_STYLE.unverified}`}>
+                          {r.replication_quality} {r.osap_correlation.toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground/50">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
                       <a href={colab} target="_blank" rel="noopener noreferrer"
                         className="text-xs text-[#C9A34E] hover:text-[#b8922d] font-medium">Colab</a>
                       <span className="text-border mx-1.5">·</span>
@@ -167,6 +188,10 @@ export default async function ReplicationsPage() {
         <p>
           <strong className="text-foreground">IS</strong> / <strong className="text-foreground">OOS</strong> are
           annualized Sharpe ratios in-sample (pre-publication) and out-of-sample (post-publication);
+ <strong className="text-foreground">vs OSAP</strong> is the correlation of our
+          (Ken-French-built) factor with the Open Source Asset Pricing single-name long-short returns —
+          a different construction of the same anomaly, so 0.4–0.8 is a genuine match (an external
+          check on top of CI).
           <strong className="text-foreground"> Decay</strong> is the fraction of in-sample Sharpe lost
           after publication. Verdicts fall out of the numbers, not editorial judgement.
         </p>
