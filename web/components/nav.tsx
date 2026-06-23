@@ -103,8 +103,15 @@ export function Nav() {
         { href: '/agents',     label: 'Agent arena' },
       ],
     },
+    {
+      label: 'Community',
+      items: [
+        { href: '/contributors', label: 'Contributors' },
+        { href: '/community',     label: 'Researchers' },
+      ],
+    },
   ]
-  const singleLinks = [{ href: '/community', label: 'Community' }]
+  const singleLinks: { href: string; label: string }[] = []
 
   const handleSignOut = () =>
     supabase.auth.signOut().then(() => (window.location.href = '/'))

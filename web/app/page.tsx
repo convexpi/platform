@@ -572,9 +572,9 @@ export default async function Home() {
                 cta: 'GitHub organization', href: ORG, ext: true,
               },
               {
-                title: 'Follow the work',
-                desc: 'Every submission is graded and its OOS result published. Follow other researchers to see results land in your feed as they come in.',
-                cta: 'Browse researchers', href: '/community', ext: false,
+                title: 'Earn reputation',
+                desc: 'Replications, wiki edits, and strategies that survive out of sample earn reputation and badges — including Ghostbuster, for replicating a factor that turned out dead. Climb the contributors leaderboard.',
+                cta: 'Contributors leaderboard', href: '/contributors', ext: false,
               },
               {
                 title: 'Teach with it',
