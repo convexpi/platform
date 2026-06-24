@@ -27,7 +27,13 @@ export default async function ContributorsPage() {
     .select('*')
     .order('reputation', { ascending: false })
     .limit(100)
-  const rows = (repRows ?? []) as RepRow[]
+  const all = (repRows ?? []) as RepRow[]
+
+  // The platform's own seed content (replications + wikis authored by the team) shouldn't compete on
+  // the community leaderboard — the house doesn't play. Pull it out and acknowledge it separately.
+  const HOUSE = new Set(['convexpi'])
+  const house = all.find(r => r.github_username && HOUSE.has(r.github_username))
+  const rows = all.filter(r => !(r.github_username && HOUSE.has(r.github_username)))
 
   // Resolve each contributor to a profile (by user_id, else by github_username) for display + links.
   const userIds = rows.map(r => r.user_id).filter(Boolean) as string[]
@@ -113,6 +119,13 @@ export default async function ContributorsPage() {
             )
           })}
         </ol>
+      )}
+
+      {house && (
+        <p className="mt-4 text-xs text-muted-foreground">
+          Plus founding content seeded by the ConvexPi team — {house.n_replications} reference
+          replications and {house.n_wiki} paper wikis — which we keep off the community leaderboard.
+        </p>
       )}
 
       {/* How to earn */}
