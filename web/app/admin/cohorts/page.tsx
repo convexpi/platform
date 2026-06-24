@@ -1,6 +1,19 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Metadata } from 'next'
+import { setCohortStatus, setCohortVisibility } from './actions'
+
+function ActBtn({ action, id, field, value, label, cls = '' }: {
+  action: (fd: FormData) => void; id: string; field: string; value: string; label: string; cls?: string
+}) {
+  return (
+    <form action={action} className="inline">
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name={field} value={value} />
+      <button type="submit" className={`underline underline-offset-2 hover:text-foreground ${cls}`}>{label}</button>
+    </form>
+  )
+}
 
 export const metadata: Metadata = { title: 'Cohorts — Admin' }
 
@@ -99,6 +112,7 @@ export default async function AdminCohorts() {
               <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground">Submissions</th>
               <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
               <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground">Vis</th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground">Manage</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -150,11 +164,18 @@ export default async function AdminCohorts() {
                       {c.visibility}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap text-[11px] text-muted-foreground space-x-2">
+                    {c.status !== 'active'  && <ActBtn action={setCohortStatus} id={c.id} field="status" value="active"  label="start" cls="text-emerald-700" />}
+                    {c.status !== 'ended'   && <ActBtn action={setCohortStatus} id={c.id} field="status" value="ended"  label="end" />}
+                    <ActBtn action={setCohortVisibility} id={c.id} field="visibility"
+                      value={c.visibility === 'public' ? 'private' : 'public'}
+                      label={c.visibility === 'public' ? 'hide' : 'publish'} />
+                  </td>
                 </tr>
               )
             })}
             {rows.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">No cohorts yet.</td></tr>
+              <tr><td colSpan={9} className="px-4 py-12 text-center text-sm text-muted-foreground">No cohorts yet.</td></tr>
             )}
           </tbody>
         </table>
