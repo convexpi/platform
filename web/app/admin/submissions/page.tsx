@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Metadata } from 'next'
+import { retrySubmission } from './actions'
 
 export const metadata: Metadata = { title: 'Submissions — Admin' }
 
@@ -178,10 +179,19 @@ export default async function AdminSubmissions({
                   }`}>
                     {report?.oos_sharpe != null ? report.oos_sharpe.toFixed(2) : '—'}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyle[s.status] ?? ''}`}>
                       {s.status}
                     </span>
+                    {(s.status === 'failed' || s.status === 'running') && (
+                      <form action={retrySubmission} className="inline">
+                        <input type="hidden" name="id" value={s.id} />
+                        <button type="submit"
+                          className="ml-2 text-[11px] text-amber-700 hover:text-amber-900 underline underline-offset-2">
+                          retry
+                        </button>
+                      </form>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right text-xs text-muted-foreground tabular-nums">
                     {timeAgo(s.submitted_at)}
