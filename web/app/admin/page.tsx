@@ -25,6 +25,10 @@ export default async function AdminOverview() {
     { count: failedCount },
     { count: cohortCount },
     { count: followCount },
+    { count: openTaskCount },
+    { count: paperCount },
+    { count: wikiCount },
+    { count: contribCount },
     { data: recentSubmissions },
     { data: recentUsers },
     { data: dailyStats },
@@ -35,6 +39,10 @@ export default async function AdminOverview() {
     db.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'failed'),
     db.from('cohorts').select('*', { count: 'exact', head: true }),
     db.from('follows').select('*', { count: 'exact', head: true }),
+    db.from('agent_tasks').select('*', { count: 'exact', head: true }).eq('status', 'todo'),
+    db.from('papers').select('*', { count: 'exact', head: true }).in('curation_status', ['candidate', 'approved']),
+    db.from('papers').select('*', { count: 'exact', head: true }).not('wiki_generated_at', 'is', null),
+    db.from('contributions').select('*', { count: 'exact', head: true }),
     db.from('submissions')
       .select('id, strategy_name, status, submitted_at, user_id, cohorts(name, slug, type)')
       .order('submitted_at', { ascending: false })
@@ -43,9 +51,10 @@ export default async function AdminOverview() {
       .select('id, username, display_name, university, created_at')
       .order('created_at', { ascending: false })
       .limit(8),
-    // Submissions per day for last 14 days
+    // Submissions per day for last 14 days (force-dynamic server component — Date.now is intended)
     db.from('submissions')
       .select('submitted_at, status')
+      // eslint-disable-next-line react-hooks/purity
       .gte('submitted_at', new Date(Date.now() - 14 * 86400_000).toISOString())
       .order('submitted_at', { ascending: true }),
   ])
@@ -103,6 +112,14 @@ export default async function AdminOverview() {
         <StatCard label="Failed"            value={failedCount ?? 0}    sub="grader errors" href="/admin/submissions?status=failed" />
         <StatCard label="Cohorts"           value={cohortCount ?? 0}    href="/admin/cohorts" />
         <StatCard label="Follows"           value={followCount ?? 0} />
+      </div>
+
+      {/* Content & queue */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <StatCard label="Open tasks"        value={openTaskCount ?? 0}  sub="agent queue" href="/admin/tasks" />
+        <StatCard label="Papers (curated)"  value={paperCount ?? 0}     sub="finance library" href="/papers" />
+        <StatCard label="Papers with wiki"  value={wikiCount ?? 0}      sub="hand-authored + pipeline" href="/papers" />
+        <StatCard label="Contributions"     value={contribCount ?? 0}   sub="reputation ledger" href="/contributors" />
       </div>
 
       <div className="grid lg:grid-cols-[1fr_320px] gap-8">
