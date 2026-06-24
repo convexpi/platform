@@ -7,12 +7,14 @@ export const dynamic = 'force-dynamic'
 
 const NAV = [
   { href: '/admin',             label: 'Overview',    icon: '◈' },
+  { href: '/admin/search',      label: 'Search',      icon: '⌕' },
   { href: '/admin/tasks',       label: 'Task queue',  icon: '✓' },
   { href: '/admin/papers',      label: 'Papers',      icon: '▤' },
   { href: '/admin/messages',    label: 'Messages',    icon: '✉' },
   { href: '/admin/users',       label: 'Users',       icon: '◉' },
   { href: '/admin/submissions', label: 'Submissions', icon: '◎' },
   { href: '/admin/cohorts',     label: 'Cohorts',     icon: '⬡' },
+  { href: '/admin/pipeline',    label: 'Pipeline',    icon: '⚙' },
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
