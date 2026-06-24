@@ -11,6 +11,8 @@ const NAV_COLS = [
       { href: '/papers',          label: 'Research papers' },
       { href: '/glossary',        label: 'Glossary' },
       { href: '/community',       label: 'Community' },
+      { href: '/contributors',    label: 'Contributors' },
+      { href: '/about',           label: 'About & contact' },
     ],
   },
   {
@@ -29,6 +31,7 @@ const NAV_COLS = [
     links: [
       { href: 'https://github.com/convexpi/lab', label: 'GitHub', external: true },
       { href: 'https://pypi.org/project/convexpi-lab/',         label: 'PyPI — convexpi-lab', external: true },
+      { href: '/replications',                                  label: 'Replications' },
       { href: '/research/factor-zoo',                           label: 'Factor zoo & replication' },
     ],
   },
