@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
+import { BetaBanner } from "@/components/beta-banner";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        <BetaBanner />
         <Nav />
         <main className="flex-1">{children}</main>
         <Footer />
