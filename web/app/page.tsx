@@ -263,8 +263,9 @@ export default async function Home() {
                   alongside a library of thousands of finance papers with structured wikis, and an open
                   package of <Link href="/replications"
                     className="underline underline-offset-4 hover:text-foreground">reference replications</Link>{' '}
-                  that recompute each strategy and score it out of sample. Some effects survive. Most attenuate —
-                  the signature of data mining rather than genuine risk premia.
+                  that recompute each strategy and score it out of sample. Most anomalies are real
+                  <em> in-sample</em> — then fade <em>out of sample</em> as the world catches on. A
+                  few survive; many decay. That gap is the whole point.
                 </p>
               </div>
               <div className="overflow-x-auto">

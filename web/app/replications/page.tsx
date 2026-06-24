@@ -1,8 +1,27 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 import { createClient } from '@/lib/supabase/server'
 
 export const revalidate = 3600
+
+// OSAP acronyms that the anomaly tracker stores under a different key.
+const ACRONYM_ALIAS: Record<string, string> = { Mom12m: 'momentum' }
+
+// Map an OSAP acronym -> anomaly-tracker slug, so a replication can link to its decay history.
+function loadAnomalySlugs(): Record<string, string> {
+  try {
+    const raw = readFileSync(join(process.cwd(), 'public/anomaly-stats.json'), 'utf8')
+    const map: Record<string, string> = {}
+    for (const a of JSON.parse(raw).anomalies as { slug?: string; id: string; osap_acronym?: string }[]) {
+      if (a.osap_acronym) map[a.osap_acronym] = a.slug ?? a.id
+    }
+    return map
+  } catch {
+    return {}
+  }
+}
 
 export const metadata: Metadata = {
   title: 'Replications — ConvexPi',
@@ -74,6 +93,8 @@ export default async function ReplicationsPage() {
       if (row.doi) doiToId[row.doi] = row.id
     }
   }
+
+  const anomalySlug = loadAnomalySlugs()
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-5xl">
@@ -159,12 +180,16 @@ export default async function ReplicationsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      {r.osap_correlation != null ? (
-                        <span title={`${r.replication_quality} match with OSAP ${r.osap_acronym ?? ''} (r = ${r.osap_correlation.toFixed(2)})`}
-                          className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${OSAP_STYLE[r.replication_quality ?? 'unverified'] ?? OSAP_STYLE.unverified}`}>
-                          {r.replication_quality} {r.osap_correlation.toFixed(2)}
-                        </span>
-                      ) : (
+                      {r.osap_correlation != null ? (() => {
+                        const slug = (r.osap_acronym && (anomalySlug[r.osap_acronym] ?? ACRONYM_ALIAS[r.osap_acronym])) || null
+                        const tag = (
+                          <span title={`${r.replication_quality} match with OSAP ${r.osap_acronym ?? ''} (r = ${r.osap_correlation!.toFixed(2)})${slug ? ' · view decay history' : ''}`}
+                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${OSAP_STYLE[r.replication_quality ?? 'unverified'] ?? OSAP_STYLE.unverified}`}>
+                            {r.replication_quality} {r.osap_correlation!.toFixed(2)}
+                          </span>
+                        )
+                        return slug ? <Link href={`/anomalies/${slug}`}>{tag}</Link> : tag
+                      })() : (
                         <span className="text-xs text-muted-foreground/50">—</span>
                       )}
                     </td>

@@ -130,6 +130,23 @@ function Sparkline({
 // Page
 // ---------------------------------------------------------------------------
 
+const REPL_RAW = 'https://raw.githubusercontent.com/convexpi/replications/main/results.json'
+const ANOMALY_TO_ACRONYM: Record<string, string> = { momentum: 'Mom12m' } // tracker slug -> OSAP acronym
+
+type Repl = { name: string; title: string; osap_acronym: string | null; oos_sharpe: number; verdict: string }
+
+async function findReplication(a: { osap_acronym?: string; slug?: string; id: string }): Promise<Repl | null> {
+  try {
+    const r = await fetch(REPL_RAW, { next: { revalidate: 3600 } })
+    if (!r.ok) return null
+    const reps = (await r.json()) as Repl[]
+    const acr = a.osap_acronym ?? ANOMALY_TO_ACRONYM[a.slug ?? a.id]
+    return acr ? (reps.find(x => x.osap_acronym === acr) ?? null) : null
+  } catch {
+    return null
+  }
+}
+
 export default async function FactorPage(
   { params }: { params: Promise<{ slug: string }> }
 ) {
@@ -137,6 +154,7 @@ export default async function FactorPage(
   const a = getAnomaly(slug)
   if (!a) notFound()
 
+  const repMatch = await findReplication(a)
   const sparkline = a.monthly_returns ?? []
   const finalCumRet = sparkline.length > 0
     ? sparkline[sparkline.length - 1].cum_ret
@@ -173,6 +191,24 @@ export default async function FactorPage(
           </p>
         )}
       </div>
+
+      {/* Runnable replication, when one exists */}
+      {repMatch && (
+        <div className="mb-8 rounded-lg border border-[#C9A34E]/30 bg-[#C9A34E]/5 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-foreground">
+            A recomputed, out-of-sample-scored <strong>replication</strong> of this factor is available —
+            verdict <span className="font-mono">{repMatch.verdict}</span>, OOS Sharpe {repMatch.oos_sharpe.toFixed(2)}.
+          </p>
+          <div className="flex gap-4 text-sm shrink-0">
+            <Link href="/replications" className="font-medium text-[#C9A34E] hover:text-[#b8922d]">
+              Replication leaderboard →
+            </Link>
+            <a href={`https://colab.research.google.com/github/convexpi/replications/blob/main/notebooks/${repMatch.name}.ipynb`}
+              target="_blank" rel="noopener noreferrer"
+              className="font-medium text-[#C9A34E] hover:text-[#b8922d]">Run in Colab ↗</a>
+          </div>
+        </div>
+      )}
 
       {/* Key stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
