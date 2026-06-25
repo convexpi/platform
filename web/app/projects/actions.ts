@@ -25,13 +25,14 @@ export async function publishPost(_prev: PublishState, fd: FormData): Promise<Pu
   const [, owner, repo, refRaw, path] = m
   const repoUrl = `https://github.com/${owner}/${repo}`
 
-  // Resolve the ref (branch or SHA) to an immutable commit SHA so the post is pinned.
+  // Resolve the ref (branch or SHA) to an immutable commit SHA so the post is pinned. The author's
+  // repo can be any public repo, so this lookup is UNauthenticated (a lab-scoped token couldn't read
+  // it). The dispatch token is used only for the call to convexpi/lab below.
   const token = process.env.GITHUB_DISPATCH_TOKEN
-  const ghHeaders: Record<string, string> = { Accept: 'application/vnd.github+json' }
-  if (token) ghHeaders.Authorization = `Bearer ${token}`
   let sha = refRaw
   if (!/^[0-9a-f]{40}$/i.test(refRaw)) {
-    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${refRaw}`, { headers: ghHeaders })
+    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${refRaw}`,
+      { headers: { Accept: 'application/vnd.github+json' } })
     if (!r.ok) return { error: `Couldn't reach that repo/branch on GitHub (${r.status}). Is it public?` }
     sha = (await r.json()).sha
   }
@@ -53,7 +54,7 @@ export async function publishPost(_prev: PublishState, fd: FormData): Promise<Pu
   if (token && row) {
     await fetch('https://api.github.com/repos/convexpi/lab/actions/workflows/build_post.yml/dispatches', {
       method: 'POST',
-      headers: { ...ghHeaders, 'Content-Type': 'application/json' },
+      headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ ref: 'main', inputs: { post_id: row.id, repo_url: repoUrl, ref: sha, notebook_path: path } }),
     }).catch(() => {})
   }
