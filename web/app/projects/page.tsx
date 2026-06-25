@@ -13,21 +13,26 @@ export const metadata: Metadata = {
 
 type Row = {
   slug: string; title: string; summary: string | null; tags: string[]
-  has_strategy: boolean; published_at: string | null
-  profiles: { username: string | null; display_name: string | null } | { username: string | null; display_name: string | null }[] | null
+  has_strategy: boolean; published_at: string | null; author_id: string
 }
-
-const first = <T,>(e: T | T[] | null): T | null => (Array.isArray(e) ? (e[0] ?? null) : e)
+type Profile = { id: string; username: string | null; display_name: string | null }
 
 export default async function ProjectsPage() {
   const supabase = await createClient()
   const { data } = await supabase
     .from('posts')
-    .select('slug, title, summary, tags, has_strategy, published_at, profiles(username, display_name)')
+    .select('slug, title, summary, tags, has_strategy, published_at, author_id')
     .eq('status', 'published')
     .order('published_at', { ascending: false })
     .limit(60)
   const posts = (data ?? []) as Row[]
+
+  // posts.author_id references auth.users, not profiles — fetch authors separately.
+  const ids = [...new Set(posts.map(p => p.author_id))]
+  const { data: profs } = ids.length
+    ? await supabase.from('profiles').select('id, username, display_name').in('id', ids)
+    : { data: [] as Profile[] }
+  const byId = new Map((profs ?? []).map(p => [p.id, p as Profile]))
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
@@ -51,7 +56,7 @@ export default async function ProjectsPage() {
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {posts.map(p => {
-            const author = first(p.profiles)
+            const author = byId.get(p.author_id)
             return (
               <Link key={p.slug} href={`/projects/${p.slug}`}
                 className="rounded-xl border border-border bg-card p-5 hover:bg-secondary/40 transition-colors flex flex-col">
