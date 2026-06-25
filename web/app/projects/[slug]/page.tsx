@@ -11,10 +11,8 @@ type Post = {
   slug: string; title: string; summary: string | null; tags: string[]
   rendered_html: string | null; status: string; build_log: string | null
   has_strategy: boolean; repo_url: string; commit_sha: string | null; license: string | null
-  profiles: { username: string | null; display_name: string | null } | { username: string | null; display_name: string | null }[] | null
+  author_id: string
 }
-
-const first = <T,>(e: T | T[] | null): T | null => (Array.isArray(e) ? (e[0] ?? null) : e)
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -28,12 +26,14 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const supabase = await createClient()
   const { data } = await supabase
     .from('posts')
-    .select('slug, title, summary, tags, rendered_html, status, build_log, has_strategy, repo_url, commit_sha, license, profiles(username, display_name)')
+    .select('slug, title, summary, tags, rendered_html, status, build_log, has_strategy, repo_url, commit_sha, license, author_id')
     .eq('slug', slug)
     .maybeSingle()
   if (!data) notFound()
   const post = data as Post
-  const author = first(post.profiles)
+  // posts.author_id references auth.users, not profiles, so fetch the profile separately.
+  const { data: author } = await supabase
+    .from('profiles').select('username, display_name').eq('id', post.author_id).maybeSingle()
   const forkUrl = `${post.repo_url}/fork`
   const sourceUrl = post.commit_sha
     ? `${post.repo_url}/blob/${post.commit_sha}`
