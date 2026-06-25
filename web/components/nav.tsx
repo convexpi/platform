@@ -231,7 +231,7 @@ export function Nav() {
 
               <nav className="mt-6 flex flex-col gap-1">
                 {navGroups.map((group) => (
-                  <div key={group.label} className="mb-2">
+                  <div key={group.label} className="mb-2 flex flex-col">
                     <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
                       {group.label}
                     </p>
@@ -240,7 +240,7 @@ export function Nav() {
                         key={href}
                         href={href}
                         onClick={() => setMobileOpen(false)}
-                        className={`rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${
+                        className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${
                           isActive(href) ? 'bg-muted text-primary' : 'text-muted-foreground'
                         }`}
                       >
