@@ -96,6 +96,16 @@ export default async function ReplicationsPage() {
 
   const anomalySlug = loadAnomalySlugs()
 
+  // OSAP cross-validation coverage, for the summary strip.
+  const validated = results.filter(r => r.osap_correlation != null)
+  const tierCount = (t: string) => validated.filter(r => r.replication_quality === t).length
+  const medAgreement = (() => {
+    const a = validated.map(r => Math.abs(r.osap_correlation as number)).sort((x, y) => x - y)
+    if (!a.length) return null
+    const m = Math.floor(a.length / 2)
+    return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2
+  })()
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-5xl">
       {/* Header */}
@@ -116,6 +126,36 @@ export default async function ReplicationsPage() {
           result is reproduced by CI, runnable in Colab, and open to your contributions.
         </p>
       </div>
+
+      {/* OSAP validation summary */}
+      {validated.length > 0 && (
+        <div className="mb-8 rounded-lg border border-border bg-secondary/30 px-5 py-4">
+          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+            <div>
+              <span className="font-serif text-2xl text-foreground">{validated.length}</span>
+              <span className="text-sm text-muted-foreground ml-1.5">of {results.length} cross-checked against OSAP</span>
+            </div>
+            {medAgreement != null && (
+              <div className="text-sm text-muted-foreground">
+                median agreement <span className="font-mono font-semibold text-foreground">{medAgreement.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{tierCount('clear')} clear</span>
+              <span className="font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{tierCount('partial')} partial</span>
+              <span className="font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{tierCount('weak')} weak</span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3 leading-relaxed max-w-3xl">
+            Each cross-sectional replication is independently checked against the{' '}
+            <a href="https://www.openassetpricing.com/" target="_blank" rel="noopener noreferrer"
+              className="underline underline-offset-4 hover:text-foreground">Open Source Asset Pricing</a>{' '}
+            single-name long-short returns (Chen &amp; Zimmermann). We report the magnitude of
+            agreement: a different construction of the same anomaly, so 0.4–0.8 is a genuine match.
+            This runs automatically alongside the leaderboard.
+          </p>
+        </div>
+      )}
 
       {results.length === 0 ? (
         <div className="rounded-lg border border-border bg-muted/30 px-6 py-12 text-center text-sm text-muted-foreground">
@@ -182,10 +222,12 @@ export default async function ReplicationsPage() {
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       {r.osap_correlation != null ? (() => {
                         const slug = (r.osap_acronym && (anomalySlug[r.osap_acronym] ?? ACRONYM_ALIAS[r.osap_acronym])) || null
+                        const mag = Math.abs(r.osap_correlation!)
+                        const flipped = r.osap_correlation! < 0
                         const tag = (
-                          <span title={`${r.replication_quality} match with OSAP ${r.osap_acronym ?? ''} (r = ${r.osap_correlation!.toFixed(2)})${slug ? ' · view decay history' : ''}`}
+                          <span title={`${r.replication_quality} match with OSAP ${r.osap_acronym ?? ''} (|r| = ${mag.toFixed(2)}${flipped ? ', OSAP signs this predictor in the opposite direction' : ''})${slug ? ' · view decay history' : ''}`}
                             className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${OSAP_STYLE[r.replication_quality ?? 'unverified'] ?? OSAP_STYLE.unverified}`}>
-                            {r.replication_quality} {r.osap_correlation!.toFixed(2)}
+                            {r.replication_quality} {mag.toFixed(2)}
                           </span>
                         )
                         return slug ? <Link href={`/anomalies/${slug}`}>{tag}</Link> : tag
@@ -213,10 +255,11 @@ export default async function ReplicationsPage() {
         <p>
           <strong className="text-foreground">IS</strong> / <strong className="text-foreground">OOS</strong> are
           annualized Sharpe ratios in-sample (pre-publication) and out-of-sample (post-publication);
- <strong className="text-foreground">vs OSAP</strong> is the correlation of our
-          (Ken-French-built) factor with the Open Source Asset Pricing single-name long-short returns —
+ <strong className="text-foreground">vs OSAP</strong> is the magnitude of correlation between our
+          (Ken-French-built) factor and the Open Source Asset Pricing single-name long-short returns —
           a different construction of the same anomaly, so 0.4–0.8 is a genuine match (an external
-          check on top of CI).
+          check on top of CI). A few predictors (e.g. beta) are signed by OSAP in the opposite
+          direction, so we show |correlation|.
           <strong className="text-foreground"> Decay</strong> is the fraction of in-sample Sharpe lost
           after publication. Verdicts fall out of the numbers, not editorial judgement.
         </p>
