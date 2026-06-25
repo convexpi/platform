@@ -135,3 +135,29 @@
     @apply font-sans;
   }
 }
+
+/* Rendered community post bodies (sanitized nbconvert output). */
+.post-body {
+  color: hsl(var(--foreground));
+  line-height: 1.7;
+}
+.post-body h1, .post-body h2, .post-body h3 { font-weight: 600; margin: 1.6em 0 0.5em; line-height: 1.25; }
+.post-body h1 { font-size: 1.6rem; }
+.post-body h2 { font-size: 1.3rem; }
+.post-body h3 { font-size: 1.1rem; }
+.post-body p { margin: 0.8em 0; }
+.post-body ul, .post-body ol { margin: 0.8em 0; padding-left: 1.4em; list-style: revert; }
+.post-body a { text-decoration: underline; text-underline-offset: 2px; }
+.post-body img { max-width: 100%; height: auto; margin: 1em 0; border-radius: 6px; }
+.post-body pre {
+  background: hsl(var(--muted)); border-radius: 8px; padding: 0.9rem 1rem;
+  overflow-x: auto; font-size: 0.82rem; line-height: 1.5; margin: 1em 0;
+}
+.post-body code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; }
+.post-body :not(pre) > code { background: hsl(var(--muted)); padding: 0.1em 0.35em; border-radius: 4px; }
+.post-body table { border-collapse: collapse; margin: 1em 0; font-size: 0.85rem; display: block; overflow-x: auto; }
+.post-body th, .post-body td { border: 1px solid hsl(var(--border)); padding: 0.35rem 0.6rem; text-align: right; }
+.post-body th { background: hsl(var(--secondary)); font-weight: 600; }
+/* nbconvert input/output prompts and stderr noise — keep it clean */
+.post-body .jp-InputPrompt, .post-body .jp-OutputPrompt, .post-body .prompt { display: none; }
+.post-body .output_stderr, .post-body .jp-OutputArea-output[data-mime-type="application/vnd.jupyter.stderr"] { display: none; }

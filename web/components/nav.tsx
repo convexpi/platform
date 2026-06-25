@@ -108,6 +108,7 @@ export function Nav() {
     {
       label: 'Community',
       items: [
+        { href: '/projects',     label: 'Projects' },
         { href: '/contributors', label: 'Contributors' },
         { href: '/community',     label: 'Researchers' },
       ],
