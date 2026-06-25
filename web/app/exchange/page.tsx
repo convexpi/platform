@@ -261,6 +261,7 @@ export default function ExchangePage() {
           the book, and see your fills land exactly where this page says they will.
         </p>
         <div className="flex flex-wrap gap-4 text-sm">
+          <Link href="/lessons/market-making" className="font-medium text-[#C9A34E] hover:text-[#b8922d]">Market-making lesson →</Link>
           <Link href="/agents" className="font-medium text-[#C9A34E] hover:text-[#b8922d]">Agent arena →</Link>
           <Link href="/compete" className="font-medium text-[#C9A34E] hover:text-[#b8922d]">Competitions →</Link>
           <a href={REPO} target="_blank" rel="noopener noreferrer"
