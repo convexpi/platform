@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ArenaBook } from '@/components/arena-book'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -214,6 +215,11 @@ export default function ArenaManagementPage({
         </Card>
       </div>
 
+      {/* Live order book (independent observer connection) */}
+      <div className="mb-6">
+        <ArenaBook url={arenaUrl} />
+      </div>
+
       {/* Scenario controls */}
       <Card className="mb-6">
         <CardHeader>
@@ -253,7 +259,7 @@ export default function ArenaManagementPage({
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            Vol shock multiplies the market's fundamental volatility by the given factor for one or more ticks — use to test student risk management.
+            Vol shock multiplies the market&apos;s fundamental volatility by the given factor for one or more ticks — use to test student risk management.
           </p>
         </CardContent>
       </Card>
