@@ -5,6 +5,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { ArenaBook } from '@/components/arena-book'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,9 +27,15 @@ export default async function CompetitionOverview({ params }: { params: Promise<
   // Arena (live trading) competitions have a non-empty arena_config and are
   // played by connecting an agent to the Arena WebSocket server — not by
   // submitting strategy code. Render a dedicated "connect" overview for them.
-  const isArena = Object.keys((cohort.arena_config ?? {}) as Record<string, unknown>).length > 0
+  const arenaConfig = (cohort.arena_config ?? {}) as Record<string, unknown>
+  const isArena = Object.keys(arenaConfig).length > 0
   if (isArena) {
-    const arenaUrl = process.env.NEXT_PUBLIC_ARENA_URL || ''
+    // Per-competition websocket URL: an explicit ws_url in arena_config wins, then a slug-specific
+    // env (book runs on its own server), then the shared default.
+    const arenaUrl =
+      (typeof arenaConfig.ws_url === 'string' ? arenaConfig.ws_url : '') ||
+      (slug === 'arena-book' ? (process.env.NEXT_PUBLIC_ARENA_BOOK_URL ?? '') : '') ||
+      (process.env.NEXT_PUBLIC_ARENA_URL ?? '')
     return (
       <div className="container mx-auto px-4 py-10 max-w-3xl">
         <div className="mb-8">
@@ -43,10 +50,17 @@ export default async function CompetitionOverview({ params }: { params: Promise<
           <Link href={`/compete/${slug}/leaderboard`} className={cn(buttonVariants())}>
             Live rankings
           </Link>
-          <Link href="/getting-started" className={cn(buttonVariants({ variant: 'outline' }))}>
-            How it works
+          <Link href="/exchange" className={cn(buttonVariants({ variant: 'outline' }))}>
+            How matching works
           </Link>
         </div>
+
+        {arenaUrl && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-2">Live order book</h2>
+            <ArenaBook url={arenaUrl} />
+          </div>
+        )}
 
         <Card className="mb-8">
           <CardContent className="pt-6">
@@ -109,16 +123,16 @@ MyAgent('your-handle', server='${arenaUrl}').run()`}</pre>
   type TopEntry = { username: string; strategyName: string; oosSharpe: number | null; overfitRatio: number | null }
   const byUser = new Map<string, TopEntry>()
 
+  // PostgREST returns embedded relations as either an object or a single-element array.
+  type GradeReport = { oos_sharpe: number | null; overfitting_ratio: number | null }
+  type Profile = { username: string | null; display_name: string | null }
+  const firstOf = <T,>(e: T | T[] | null | undefined): T | null =>
+    Array.isArray(e) ? (e[0] ?? null) : (e ?? null)
+
   for (const row of topSubmissions ?? []) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const report = Array.isArray((row as any).grade_reports)
-      ? (row as any).grade_reports[0]
-      : (row as any).grade_reports
+    const report = firstOf(row.grade_reports as GradeReport | GradeReport[] | null)
     if (!report) continue
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const profile = Array.isArray((row as any).profiles)
-      ? (row as any).profiles[0]
-      : (row as any).profiles
+    const profile = firstOf(row.profiles as Profile | Profile[] | null)
 
     const oosSharpe = report.oos_sharpe as number | null
     const existing = byUser.get(row.user_id)
