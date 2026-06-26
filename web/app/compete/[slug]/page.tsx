@@ -130,7 +130,9 @@ export default async function CompetitionOverview({ params }: { params: Promise<
     const arenaUrl =
       (typeof arenaConfig.ws_url === 'string' ? arenaConfig.ws_url : '') ||
       (slug === 'arena-book' ? (process.env.NEXT_PUBLIC_ARENA_BOOK_URL ?? '') : '') ||
-      (process.env.NEXT_PUBLIC_ARENA_URL ?? '')
+      (slug === 'arena-l3' ? (process.env.NEXT_PUBLIC_ARENA_L3_URL ?? '') : '') ||
+      // Only the generic ladder falls back to the shared server — book/L3 are their own instances.
+      (slug === 'arena-open' ? (process.env.NEXT_PUBLIC_ARENA_URL ?? '') : '')
     return (
       <div className="container mx-auto px-4 py-10 max-w-3xl">
         <div className="mb-8">
