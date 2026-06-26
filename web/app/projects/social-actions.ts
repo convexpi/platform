@@ -1,8 +1,20 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+
+export async function toggleFeatured(fd: FormData) {
+  const postId = String(fd.get('post_id') ?? '')
+  const slug = String(fd.get('slug') ?? '')
+  const featured = String(fd.get('featured') ?? '') === 'true'
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !isAdmin(user.id) || !postId) return
+  await createAdminClient().from('posts').update({ featured }).eq('id', postId)
+  if (slug) revalidatePath(`/projects/${slug}`)
+  revalidatePath('/projects')
+}
 
 const UPVOTE_POINTS = 2   // reputation awarded to a post's author per upvote received
 

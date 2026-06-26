@@ -4,14 +4,15 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { toggleVote, addComment, deleteComment, submitToLeaderboard } from '../social-actions'
+import { toggleVote, addComment, deleteComment, submitToLeaderboard, toggleFeatured } from '../social-actions'
+import { isAdmin } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
 type Post = {
   id: string; slug: string; title: string; summary: string | null; tags: string[]
   notebook_path: string; rendered_html: string | null; status: string; build_log: string | null
-  has_strategy: boolean; repo_url: string; commit_sha: string | null; license: string | null
+  has_strategy: boolean; featured: boolean; repo_url: string; commit_sha: string | null; license: string | null
   author_id: string; submission_id: string | null
 }
 
@@ -27,13 +28,14 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const supabase = await createClient()
   const { data } = await supabase
     .from('posts')
-    .select('id, slug, title, summary, tags, notebook_path, rendered_html, status, build_log, has_strategy, repo_url, commit_sha, license, author_id, submission_id')
+    .select('id, slug, title, summary, tags, notebook_path, rendered_html, status, build_log, has_strategy, featured, repo_url, commit_sha, license, author_id, submission_id')
     .eq('slug', slug)
     .maybeSingle()
   if (!data) notFound()
   const post = data as Post
   const { data: { user } } = await supabase.auth.getUser()
   const isAuthor = user?.id === post.author_id
+  const admin = !!user && isAdmin(user.id)
 
   // Leaderboard tie-in: a graded OOS report, or a pending submission, or eligible to submit.
   let grade: { oos_sharpe: number | null; overfitting_ratio: number | null } | null = null
@@ -79,9 +81,21 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         <Link href="/projects" className="text-sm text-muted-foreground hover:text-foreground">← Projects</Link>
       </div>
 
-      <h1 className="font-serif text-4xl text-foreground leading-tight mb-2">{post.title}</h1>
+      <h1 className="font-serif text-4xl text-foreground leading-tight mb-2">
+        {post.featured && <span title="Featured" className="text-[#C9A34E] mr-1">★</span>}{post.title}
+      </h1>
       <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground mb-6">
         <span>{author?.display_name || (author?.username ? `@${author.username}` : 'anon')}</span>
+        {admin && (
+          <form action={toggleFeatured} className="inline">
+            <input type="hidden" name="post_id" value={post.id} />
+            <input type="hidden" name="slug" value={post.slug} />
+            <input type="hidden" name="featured" value={(!post.featured).toString()} />
+            <button type="submit" className="text-xs underline underline-offset-2 hover:text-foreground">
+              {post.featured ? 'unfeature' : 'feature'}
+            </button>
+          </form>
+        )}
         {post.has_strategy && <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs">strategy</span>}
         {post.tags?.map(t => <span key={t} className="px-1.5 py-0.5 rounded-full bg-secondary text-xs">{t}</span>)}
       </div>

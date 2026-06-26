@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 type Row = {
   slug: string; title: string; summary: string | null; tags: string[]
-  has_strategy: boolean; published_at: string | null; author_id: string
+  has_strategy: boolean; featured: boolean; published_at: string | null; author_id: string
 }
 type Profile = { id: string; username: string | null; display_name: string | null }
 
@@ -21,8 +21,9 @@ export default async function ProjectsPage() {
   const supabase = await createClient()
   const { data } = await supabase
     .from('posts')
-    .select('slug, title, summary, tags, has_strategy, published_at, author_id')
+    .select('slug, title, summary, tags, has_strategy, featured, published_at, author_id')
     .eq('status', 'published')
+    .order('featured', { ascending: false })
     .order('published_at', { ascending: false })
     .limit(60)
   const posts = (data ?? []) as Row[]
@@ -59,8 +60,10 @@ export default async function ProjectsPage() {
             const author = byId.get(p.author_id)
             return (
               <Link key={p.slug} href={`/projects/${p.slug}`}
-                className="rounded-xl border border-border bg-card p-5 hover:bg-secondary/40 transition-colors flex flex-col">
-                <h2 className="font-medium text-foreground leading-snug mb-1">{p.title}</h2>
+                className={`rounded-xl border bg-card p-5 hover:bg-secondary/40 transition-colors flex flex-col ${p.featured ? 'border-[#C9A34E]/50 ring-1 ring-[#C9A34E]/20' : 'border-border'}`}>
+                <h2 className="font-medium text-foreground leading-snug mb-1">
+                  {p.featured && <span title="Featured" className="text-[#C9A34E] mr-1">★</span>}{p.title}
+                </h2>
                 {p.summary && <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{p.summary}</p>}
                 <div className="mt-auto flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                   <span>{author?.display_name || (author?.username ? `@${author.username}` : 'anon')}</span>
