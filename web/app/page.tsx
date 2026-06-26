@@ -48,6 +48,19 @@ export default async function Home() {
 
   const demoLeaderboard = (demoRows ?? []) as unknown as GradeReport[]
 
+  // Featured community projects (posts.author_id references auth.users, so authors are fetched separately).
+  const { data: featRows } = await supabase
+    .from('posts')
+    .select('slug, title, summary, tags, has_strategy, author_id')
+    .eq('status', 'published').eq('featured', true)
+    .order('published_at', { ascending: false }).limit(3)
+  const featured = (featRows ?? []) as { slug: string; title: string; summary: string | null; tags: string[]; has_strategy: boolean; author_id: string }[]
+  const fIds = [...new Set(featured.map(p => p.author_id))]
+  const { data: fProfs } = fIds.length
+    ? await supabase.from('profiles').select('id, username, display_name').in('id', fIds)
+    : { data: [] as { id: string; username: string | null; display_name: string | null }[] }
+  const fBy = new Map((fProfs ?? []).map(p => [p.id, p]))
+
   return (
     <div className="flex flex-col">
 
@@ -189,6 +202,38 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── Featured projects ─────────────────────────────────────────── */}
+      {featured.length > 0 && (
+        <section className="border-b border-border">
+          <div className="container mx-auto px-4 py-16">
+            <div className="flex items-end justify-between gap-4 mb-8">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase mb-2">Community showcase</p>
+                <h2 className="font-serif text-3xl text-foreground">Featured projects</h2>
+                <p className="text-muted-foreground mt-1">Strategy write-ups published from GitHub, run and graded by ConvexPi.</p>
+              </div>
+              <Link href="/projects" className="text-sm text-[#C9A34E] hover:text-[#b8922d] font-medium shrink-0">All projects →</Link>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {featured.map(p => {
+                const a = fBy.get(p.author_id)
+                return (
+                  <Link key={p.slug} href={`/projects/${p.slug}`}
+                    className="rounded-xl border border-[#C9A34E]/40 ring-1 ring-[#C9A34E]/10 bg-card p-5 hover:bg-secondary/40 transition-colors flex flex-col">
+                    <h3 className="font-medium text-foreground leading-snug mb-1"><span className="text-[#C9A34E] mr-1">★</span>{p.title}</h3>
+                    {p.summary && <p className="text-sm text-muted-foreground line-clamp-3 mb-3">{p.summary}</p>}
+                    <div className="mt-auto flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                      <span>{a?.display_name || (a?.username ? `@${a.username}` : 'ConvexPi')}</span>
+                      {p.has_strategy && <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">strategy</span>}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Core insight ──────────────────────────────────────────────── */}
       <section className="border-b border-border">
