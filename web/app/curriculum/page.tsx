@@ -112,6 +112,41 @@ const MISSIONS: Mission[] = [
   },
 ]
 
+// Standalone deep-dives that extend the core arc. Each assumes the fundamentals
+// but doesn't need to be taken in order.
+const ELECTIVES: Mission[] = [
+  {
+    number: 7,
+    title: 'Queue dynamics',
+    subtitle: 'Trading the realistic exchange (L3)',
+    duration: '60–90 min',
+    colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_07_queue_dynamics/notebook.ipynb',
+    objectives: [
+      'Explain FIFO queue priority and why queue position is the maker’s core asset',
+      'Simulate a resting limit order order-by-order: drain the queue, then fill',
+      'Model the cancel race against latency, and adverse selection',
+      'Observe queue dynamics on a real Bitstamp BTC/USD L3 feed',
+    ],
+    concepts: ['Queue position', 'FIFO priority', 'Order-by-order (L3)', 'Latency', 'Adverse selection'],
+    prereqs: 'Mission 2 (the limit-order book). Connects to the live L3 arena.',
+  },
+  {
+    number: 8,
+    title: 'The cost of trading',
+    subtitle: 'Turnover, transaction costs & capacity',
+    duration: '60–90 min',
+    colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_08_cost_of_trading/notebook.ipynb',
+    objectives: [
+      'Quantify how transaction costs scale with turnover and erase paper alpha',
+      'Use rebalance frequency and no-trade bands to control turnover',
+      'Find a strategy’s break-even cost — where its edge disappears',
+      'Reason about capacity: why size itself moves the price against you',
+    ],
+    concepts: ['Turnover', 'Transaction costs', 'Break-even cost', 'No-trade band', 'Capacity'],
+    prereqs: 'Mission 3 or any strategy you want to pressure-test for real-world costs.',
+  },
+]
+
 function MissionCard({ m }: { m: Mission }) {
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
@@ -179,8 +214,9 @@ export default function CurriculumPage() {
       <div className="mb-12 max-w-2xl">
         <h1 className="text-3xl font-bold mb-3">Curriculum</h1>
         <p className="text-muted-foreground text-lg leading-relaxed">
-          Six missions in quantitative equity research. Each builds on the last —
-          from the basic overfitting problem through to real data and execution.
+          Six core missions in quantitative equity research, each building on the last —
+          from the basic overfitting problem through to real data and execution — plus
+          advanced electives on market microstructure and trading costs.
           All missions run in Google Colab. No local installation required.
         </p>
         <div className="flex gap-3 mt-6">
@@ -196,8 +232,8 @@ export default function CurriculumPage() {
       {/* Course at a glance */}
       <div className="grid sm:grid-cols-4 gap-4 mb-12 rounded-xl border bg-muted/20 p-6">
         {[
-          { label: 'Missions',        value: '6' },
-          { label: 'Total time',      value: '8–12 hrs' },
+          { label: 'Missions',        value: '6 + 2' },
+          { label: 'Total time',      value: '10–15 hrs' },
           { label: 'Format',          value: 'Colab notebooks' },
           { label: 'Assessment',      value: 'OOS Sharpe ratio' },
         ].map(({ label, value }) => (
@@ -211,6 +247,18 @@ export default function CurriculumPage() {
       {/* Mission cards */}
       <div className="flex flex-col gap-6">
         {MISSIONS.map(m => <MissionCard key={m.number} m={m} />)}
+      </div>
+
+      {/* Advanced electives */}
+      <div className="mt-14 mb-6">
+        <h2 className="text-xl font-semibold">Advanced electives</h2>
+        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+          Standalone deep-dives that extend the core arc. Take them in any order once you have the
+          fundamentals — they go further into market microstructure and the economics of trading.
+        </p>
+      </div>
+      <div className="flex flex-col gap-6">
+        {ELECTIVES.map(m => <MissionCard key={m.number} m={m} />)}
       </div>
 
       {/* Instructor note */}
