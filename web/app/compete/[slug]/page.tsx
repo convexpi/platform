@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { ArenaBook } from '@/components/arena-book'
+import { submitSp500Model } from '../sp500-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +38,91 @@ export default async function CompetitionOverview({ params }: { params: Promise<
     || (isArena
       ? 'Played live against a limit order book — your agent posts and takes orders in real time.'
       : 'Graded on a hidden synthetic market: a simulated cross-section of stocks with planted alphas to discover, split into in-sample and out-of-sample. Your score is the out-of-sample Sharpe — the part that can’t be overfit.')
+
+  // The S&P-500 next-day competition is its own game (live forecasts on real prices).
+  if (slug === 'sp500-nextday') {
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: models } = await supabase.from('sp500_models').select('id, name, user_id').eq('status', 'active')
+    const { data: scores } = await supabase.from('sp500_scores').select('model_id, hit_rate, cum_return, sharpe, n_days, last_date')
+    type Score = { model_id: string; hit_rate: number; cum_return: number; sharpe: number; n_days: number; last_date: string }
+    const sBy = new Map((scores ?? []).map((s) => [(s as Score).model_id, s as Score]))
+    const uIds = [...new Set((models ?? []).map((m) => m.user_id).filter(Boolean))] as string[]
+    const { data: profs } = uIds.length
+      ? await supabase.from('profiles').select('id, username, display_name').in('id', uIds)
+      : { data: [] as { id: string; username: string | null; display_name: string | null }[] }
+    const pBy = new Map((profs ?? []).map((p) => [p.id, p]))
+    const rows = (models ?? []).map((m) => {
+      const p = m.user_id ? pBy.get(m.user_id) : null
+      return { id: m.id as string, name: m.name as string, mine: !!user && m.user_id === user.id,
+               author: m.user_id ? (p?.display_name || (p?.username ? `@${p.username}` : 'someone')) : 'ConvexPi',
+               s: sBy.get(m.id as string) }
+    }).sort((a, b) => (b.s?.sharpe ?? -Infinity) - (a.s?.sharpe ?? -Infinity))
+    const lastDate = (scores ?? [])[0] ? (scores as Score[]).map(s => s.last_date).sort().slice(-1)[0] : null
+
+    const TEMPLATE = `def predict(history):
+    # history: a pandas DataFrame of daily S&P 500 closes (column 'close'),
+    # up to and including today. Return your forecast of TOMORROW's return.
+    c = history['close']
+    return float(c.iloc[-1] / c.iloc[-6] - 1)   # 5-day momentum (replace me)`
+
+    return (
+      <div className="container mx-auto px-4 py-10 max-w-3xl">
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold">{cohort.name}</h1>
+            <Badge>live</Badge>
+          </div>
+          {cohort.description && <p className="text-muted-foreground text-lg">{cohort.description}</p>}
+          <div className="mt-4 rounded-lg border border-border bg-secondary/30 px-4 py-3 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Data &amp; scoring:</span> {dataNote}
+          </div>
+        </div>
+
+        <h2 className="text-lg font-semibold mb-3">Standings {lastDate && <span className="text-sm font-normal text-muted-foreground">· through {lastDate}</span>}</h2>
+        <div className="rounded-xl border border-border overflow-hidden mb-10">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-secondary/50 text-xs text-muted-foreground">
+              <th className="text-left px-3 py-2">#</th><th className="text-left px-3 py-2">Model</th>
+              <th className="text-right px-3 py-2">Hit rate</th><th className="text-right px-3 py-2">Cum. PnL</th>
+              <th className="text-right px-3 py-2">Sharpe</th><th className="text-right px-3 py-2">Days</th>
+            </tr></thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((r, i) => (
+                <tr key={r.id} className={r.mine ? 'bg-[#C9A34E]/5' : ''}>
+                  <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                  <td className="px-3 py-2"><span className="font-medium text-foreground">{r.name}</span> <span className="text-xs text-muted-foreground">{r.author}</span></td>
+                  <td className="px-3 py-2 text-right font-mono">{r.s ? `${(r.s.hit_rate * 100).toFixed(0)}%` : '—'}</td>
+                  <td className={`px-3 py-2 text-right font-mono ${(r.s?.cum_return ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{r.s ? `${(r.s.cum_return * 100).toFixed(1)}%` : '—'}</td>
+                  <td className={`px-3 py-2 text-right font-mono font-semibold ${(r.s?.sharpe ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{r.s ? r.s.sharpe.toFixed(2) : '—'}</td>
+                  <td className="px-3 py-2 text-right font-mono text-muted-foreground">{r.s?.n_days ?? '—'}</td>
+                </tr>
+              ))}
+              {rows.length === 0 && <tr><td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">No models yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+
+        <h2 className="text-lg font-semibold mb-2">Compete</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Submit a Python <code>predict(history)</code> that forecasts the next day&apos;s return. It&apos;s
+          scored walk-forward on real prices and re-scored daily as new sessions arrive — ranked by the
+          Sharpe of its directional bets. Sign of your forecast = your bet (up/down).
+        </p>
+        {user ? (
+          <form action={submitSp500Model} className="space-y-3">
+            <input name="name" required maxLength={80} placeholder="Model name"
+              className="w-full text-sm border rounded-lg px-3 py-2 bg-background" />
+            <textarea name="code" required rows={7} defaultValue={TEMPLATE}
+              className="w-full font-mono text-xs border rounded-lg px-3 py-2 bg-background" />
+            <button type="submit" className={cn(buttonVariants({ size: 'sm' }))}>Submit model</button>
+            <p className="text-xs text-muted-foreground">Must define <code>predict(history)</code>. Runs sandboxed; results appear after the next scoring run.</p>
+          </form>
+        ) : (
+          <p className="text-sm text-muted-foreground"><Link href="/login" className="underline underline-offset-4">Sign in</Link> to submit a model.</p>
+        )}
+      </div>
+    )
+  }
 
   if (isArena) {
     // Per-competition websocket URL: an explicit ws_url in arena_config wins, then a slug-specific
