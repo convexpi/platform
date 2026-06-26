@@ -3,6 +3,46 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, isAdmin } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import Anthropic from '@anthropic-ai/sdk'
+
+const REVIEW_PROMPT =
+  'You are a constructive peer reviewer for a quantitative-finance strategy write-up posted to a ' +
+  'student showcase. In under 180 words and using short markdown bullets, give: 2-3 specific ' +
+  'strengths, 2-3 concrete suggestions to improve the analysis or rigor, and one good question for ' +
+  'the author. Be encouraging but honest — gently flag unsupported claims, look-ahead/overfitting ' +
+  'risks, or low-effort work. Do not restate the whole post.\n\nPOST:\n'
+
+export async function requestAiReview(fd: FormData) {
+  const postId = String(fd.get('post_id') ?? '')
+  const slug = String(fd.get('slug') ?? '')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !postId) return
+  const { data: post } = await supabase.from('posts')
+    .select('author_id, rendered_html, status').eq('id', postId).maybeSingle()
+  if (!post || post.status !== 'published' || !post.rendered_html) return
+  if (post.author_id !== user.id && !isAdmin(user.id)) return
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) return
+  const text = post.rendered_html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 8000)
+  try {
+    const client = new Anthropic({ apiKey })
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: REVIEW_PROMPT + text }],
+    })
+    const review = msg.content.filter(b => b.type === 'text').map(b => (b as { text: string }).text).join('\n').trim()
+    if (review) {
+      await createAdminClient().from('posts')
+        .update({ ai_review: review, ai_reviewed_at: new Date().toISOString() }).eq('id', postId)
+    }
+  } catch {
+    return
+  }
+  if (slug) revalidatePath(`/projects/${slug}`)
+}
 
 export async function toggleFeatured(fd: FormData) {
   const postId = String(fd.get('post_id') ?? '')

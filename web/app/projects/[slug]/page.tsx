@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { toggleVote, addComment, deleteComment, submitToLeaderboard, toggleFeatured } from '../social-actions'
+import { toggleVote, addComment, deleteComment, submitToLeaderboard, toggleFeatured, requestAiReview } from '../social-actions'
 import { isAdmin } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
@@ -13,7 +13,7 @@ type Post = {
   id: string; slug: string; title: string; summary: string | null; tags: string[]
   notebook_path: string; rendered_html: string | null; status: string; build_log: string | null
   has_strategy: boolean; featured: boolean; repo_url: string; commit_sha: string | null; license: string | null
-  author_id: string; submission_id: string | null; format: string
+  author_id: string; submission_id: string | null; format: string; ai_review: string | null
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -28,7 +28,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const supabase = await createClient()
   const { data } = await supabase
     .from('posts')
-    .select('id, slug, title, summary, tags, notebook_path, rendered_html, status, build_log, has_strategy, featured, repo_url, commit_sha, license, author_id, submission_id, format')
+    .select('id, slug, title, summary, tags, notebook_path, rendered_html, status, build_log, has_strategy, featured, repo_url, commit_sha, license, author_id, submission_id, format, ai_review')
     .eq('slug', slug)
     .maybeSingle()
   if (!data) notFound()
@@ -174,6 +174,29 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       )}
       {post.status === 'published' && post.rendered_html && (
         <article className="post-body" dangerouslySetInnerHTML={{ __html: post.rendered_html }} />
+      )}
+
+      {/* AI first-pass review */}
+      {post.status === 'published' && (post.ai_review || isAuthor || admin) && (
+        <div className="mt-8 rounded-lg border border-border bg-secondary/30 px-5 py-4">
+          <div className="flex items-center justify-between gap-3 mb-1">
+            <p className="text-sm font-semibold text-foreground">AI first-pass review</p>
+            {(isAuthor || admin) && (
+              <form action={requestAiReview}>
+                <input type="hidden" name="post_id" value={post.id} />
+                <input type="hidden" name="slug" value={post.slug} />
+                <button type="submit" className="text-xs underline underline-offset-2 text-muted-foreground hover:text-foreground">
+                  {post.ai_review ? 'regenerate' : 'get AI feedback'}
+                </button>
+              </form>
+            )}
+          </div>
+          {post.ai_review ? (
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{post.ai_review}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">A quick, constructive first pass from Claude — strengths, suggestions, and a question to get the discussion going. Not a substitute for human feedback.</p>
+          )}
+        </div>
       )}
 
       <div className="mt-10 border-t border-border pt-6">
