@@ -47,6 +47,27 @@ const MISSIONS = [
     desc: 'RL execution, market impact, end-to-end strategy',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_06_advanced_agents/notebook.ipynb',
   },
+  {
+    id: 'mission_07_queue_dynamics',
+    label: 'Mission 7',
+    title: 'Queue Dynamics (L3) · elective',
+    desc: 'Queue position, latency, the cancel race',
+    colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_07_queue_dynamics/notebook.ipynb',
+  },
+  {
+    id: 'mission_08_cost_of_trading',
+    label: 'Mission 8',
+    title: 'The Cost of Trading · elective',
+    desc: 'Turnover, transaction costs, break-even, capacity',
+    colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_08_cost_of_trading/notebook.ipynb',
+  },
+  {
+    id: 'mission_09_pairs_trading',
+    label: 'Mission 9',
+    title: 'Pairs Trading · elective',
+    desc: 'Cointegration, spread z-score, spurious pairs',
+    colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_09_pairs_trading/notebook.ipynb',
+  },
 ]
 
 export function MissionProgress({ initialCompleted }: { initialCompleted: string[] }) {

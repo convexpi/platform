@@ -5,6 +5,12 @@ const VALID_MISSIONS = [
   'mission_01_overfitting',
   'mission_02_marketmaker',
   'mission_03_alpha_discovery',
+  'mission_04_strategy_library',
+  'mission_05_real_data',
+  'mission_06_advanced_agents',
+  'mission_07_queue_dynamics',
+  'mission_08_cost_of_trading',
+  'mission_09_pairs_trading',
 ] as const
 
 export async function POST(req: NextRequest) {
