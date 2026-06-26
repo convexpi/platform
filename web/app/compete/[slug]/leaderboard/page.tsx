@@ -44,6 +44,12 @@ export default async function CompetitionLeaderboard({ params }: { params: Promi
     if (data) initialRankings.push(...(data as ArenaRanking[]))
   }
 
+  // Position is stored in raw engine units; crypto modes use integer micro-quantities,
+  // so scale to natural units (BTC) for display. Mirrors server.pnl_scale.
+  const arenaMode = (session?.config as { mode?: string } | null)?.mode
+  const posScale = arenaMode === 'crypto_l3' ? 1_000_000 : arenaMode === 'crypto_book' ? 1000 : 1
+  const posUnit = arenaMode === 'crypto_l3' || arenaMode === 'crypto_book' ? 'BTC' : undefined
+
   const statusColor = { upcoming: 'secondary', active: 'default', ended: 'outline' } as const
 
   return (
@@ -107,7 +113,7 @@ export default async function CompetitionLeaderboard({ params }: { params: Promi
       {session && (
         <section>
           <h2 className="text-lg font-semibold mb-4 text-muted-foreground">Arena rankings</h2>
-          <Leaderboard sessionId={session.id} initialRankings={initialRankings} />
+          <Leaderboard sessionId={session.id} initialRankings={initialRankings} posScale={posScale} posUnit={posUnit} />
         </section>
       )}
     </div>
