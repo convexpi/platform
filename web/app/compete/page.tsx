@@ -71,6 +71,11 @@ function Section({ title, cohorts }: { title: string; cohorts: Cohort[] }) {
 
 function CompetitionCard({ cohort }: { cohort: Cohort }) {
   const statusColor = { upcoming: 'secondary', active: 'default', ended: 'outline' } as const
+  // Arena and the S&P competition are entered on the competition page itself (connect / inline form),
+  // not via the Lab code-submit page.
+  const isArena = Object.keys((cohort.arena_config ?? {}) as Record<string, unknown>).length > 0
+  const entersOnPage = isArena || cohort.slug === 'sp500-nextday'
+  const enterHref = entersOnPage ? `/compete/${cohort.slug}` : `/compete/${cohort.slug}/submit`
   return (
     <Card className="hover:shadow-md transition-shadow flex flex-col">
       <CardHeader className="flex-1">
@@ -95,7 +100,7 @@ function CompetitionCard({ cohort }: { cohort: Cohort }) {
               <Button variant="outline" size="sm">View</Button>
             </Link>
             {cohort.status === 'active' && (
-              <Link href={`/compete/${cohort.slug}/submit`}>
+              <Link href={enterHref}>
                 <Button size="sm">Enter</Button>
               </Link>
             )}
