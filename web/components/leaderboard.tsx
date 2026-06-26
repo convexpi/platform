@@ -8,9 +8,13 @@ import type { ArenaRanking } from '@/lib/types'
 interface LeaderboardProps {
   sessionId: string
   initialRankings: ArenaRanking[]
+  /** Integer quantity units per natural unit (e.g. 1e6 micro-BTC for L3). Default 1 (shares). */
+  posScale?: number
+  /** Label for one natural position unit, e.g. "BTC". Omitted for plain share markets. */
+  posUnit?: string
 }
 
-export function Leaderboard({ sessionId, initialRankings }: LeaderboardProps) {
+export function Leaderboard({ sessionId, initialRankings, posScale = 1, posUnit }: LeaderboardProps) {
   const [rankings, setRankings] = useState<ArenaRanking[]>(initialRankings)
   const [tick, setTick] = useState(initialRankings[0]?.tick ?? 0)
   const [connected, setConnected] = useState(false)
@@ -51,6 +55,15 @@ export function Leaderboard({ sessionId, initialRankings }: LeaderboardProps) {
     n >= 0
       ? `+$${n.toFixed(2)}`
       : `-$${Math.abs(n).toFixed(2)}`
+
+  // Position is stored in raw engine units; scale to natural units for display.
+  const fmtPos = (raw: number) => {
+    const p = raw / posScale
+    const body = posScale === 1
+      ? `${p > 0 ? '+' : ''}${p}`
+      : `${p > 0 ? '+' : ''}${p.toFixed(4).replace(/\.?0+$/, '')}${posUnit ? ` ${posUnit}` : ''}`
+    return body
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -93,7 +106,7 @@ export function Leaderboard({ sessionId, initialRankings }: LeaderboardProps) {
                   {fmt(r.pnl_dollars)}
                 </td>
                 <td className="px-4 py-3 text-right font-mono hidden sm:table-cell">
-                  {r.position > 0 ? `+${r.position}` : r.position}
+                  {fmtPos(r.position)}
                 </td>
                 <td className="px-4 py-3 text-right hidden md:table-cell">
                   {r.survival_score != null ? r.survival_score.toFixed(2) : '—'}
