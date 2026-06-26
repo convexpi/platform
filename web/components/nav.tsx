@@ -114,7 +114,7 @@ export function Nav() {
       ],
     },
   ]
-  const singleLinks: { href: string; label: string }[] = []
+  const singleLinks: { href: string; label: string }[] = [{ href: '/overview', label: 'Overview' }]
 
   const handleSignOut = () =>
     supabase.auth.signOut().then(() => (window.location.href = '/'))

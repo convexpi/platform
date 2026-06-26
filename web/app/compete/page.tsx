@@ -74,8 +74,15 @@ function CompetitionCard({ cohort }: { cohort: Cohort }) {
   // Arena and the S&P competition are entered on the competition page itself (connect / inline form),
   // not via the Lab code-submit page.
   const isArena = Object.keys((cohort.arena_config ?? {}) as Record<string, unknown>).length > 0
-  const entersOnPage = isArena || cohort.slug === 'sp500-nextday'
+  const isForecast = cohort.slug === 'sp500-nextday'
+  const entersOnPage = isArena || isForecast
   const enterHref = entersOnPage ? `/compete/${cohort.slug}` : `/compete/${cohort.slug}/submit`
+  // Typology: how you play + what it's graded on, so the list is legible at a glance.
+  const kind = isForecast
+    ? { label: 'Forecast', how: 'submit a predictor · scored live on real prices' }
+    : isArena
+      ? { label: 'Arena', how: 'connect a trading agent · live order book' }
+      : { label: 'Lab', how: 'submit strategy code · hidden out-of-sample market' }
   return (
     <Card className="hover:shadow-md transition-shadow flex flex-col">
       <CardHeader className="flex-1">
@@ -83,8 +90,12 @@ function CompetitionCard({ cohort }: { cohort: Cohort }) {
           <CardTitle className="text-base">{cohort.name}</CardTitle>
           <Badge variant={statusColor[cohort.status]}>{cohort.status}</Badge>
         </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-medium px-1.5 py-0.5 rounded-full bg-secondary text-foreground">{kind.label}</span>
+          <span>{kind.how}</span>
+        </div>
         {cohort.description && (
-          <CardDescription className="line-clamp-3">{cohort.description}</CardDescription>
+          <CardDescription className="line-clamp-2">{cohort.description}</CardDescription>
         )}
       </CardHeader>
       <CardContent>
