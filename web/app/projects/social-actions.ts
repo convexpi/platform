@@ -65,7 +65,12 @@ export async function submitToLeaderboard(fd: FormData) {
   const { data: post } = await supabase.from('posts')
     .select('author_id, repo_url, commit_sha, notebook_path, title, has_strategy, submission_id')
     .eq('id', postId).maybeSingle()
-  if (!post || post.author_id !== user.id || !post.has_strategy || post.submission_id) return
+  if (!post || post.author_id !== user.id || !post.has_strategy) return
+  if (post.submission_id) {
+    // Already submitted — only allow a re-submit if the previous attempt failed.
+    const { data: prev } = await supabase.from('submissions').select('status').eq('id', post.submission_id).maybeSingle()
+    if (prev && prev.status !== 'failed') return
+  }
 
   // Fetch the notebook at the pinned commit and extract the cell defining MyStrategy.
   const [, owner, repo] = post.repo_url.match(/github\.com\/([^/]+)\/([^/]+)/) ?? []

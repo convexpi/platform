@@ -37,10 +37,15 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
   // Leaderboard tie-in: a graded OOS report, or a pending submission, or eligible to submit.
   let grade: { oos_sharpe: number | null; overfitting_ratio: number | null } | null = null
+  let subStatus: string | null = null
   if (post.submission_id) {
     const { data: gr } = await supabase.from('grade_reports')
       .select('oos_sharpe, overfitting_ratio').eq('submission_id', post.submission_id).maybeSingle()
     grade = gr
+    if (!gr) {
+      const { data: s } = await supabase.from('submissions').select('status').eq('id', post.submission_id).maybeSingle()
+      subStatus = s?.status ?? null
+    }
   }
 
   // posts.author_id references auth.users, not profiles, so fetch the profile separately.
@@ -112,6 +117,19 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
               <span className="text-emerald-700">· OOS Sharpe <span className="font-mono font-semibold">{grade.oos_sharpe?.toFixed(2) ?? '—'}</span></span>
               <span className="text-xs text-emerald-600">on the permanent leaderboard ↗</span>
             </Link>
+          ) : subStatus === 'failed' ? (
+            <div className="text-sm">
+              <span className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-amber-700">
+                Grading failed — make sure <code>MyStrategy</code> subclasses the Lab <code>Strategy</code> and runs standalone.
+              </span>
+              {isAuthor && (
+                <form action={submitToLeaderboard} className="mt-2">
+                  <input type="hidden" name="post_id" value={post.id} />
+                  <input type="hidden" name="slug" value={post.slug} />
+                  <button type="submit" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>Re-submit</button>
+                </form>
+              )}
+            </div>
           ) : post.submission_id ? (
             <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2 text-sm text-muted-foreground">
               ⏳ Grading this strategy on hidden out-of-sample data…
