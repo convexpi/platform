@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 
 export type PublishState = { error?: string }
 
-const GH_BLOB = /github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+\.ipynb)$/i
+const GH_BLOB = /github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+\.(?:ipynb|qmd))$/i
 
 function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)
@@ -20,10 +20,11 @@ export async function publishPost(_prev: PublishState, fd: FormData): Promise<Pu
   const license = String(fd.get('license') ?? '').trim() || null
   const m = url.match(GH_BLOB)
   if (!m) {
-    return { error: 'Paste a link to a notebook file on GitHub, e.g. https://github.com/you/repo/blob/main/post.ipynb' }
+    return { error: 'Paste a link to a notebook (.ipynb) or Quarto (.qmd) file on GitHub, e.g. https://github.com/you/repo/blob/main/post.ipynb' }
   }
   const [, owner, repo, refRaw, path] = m
   const repoUrl = `https://github.com/${owner}/${repo}`
+  const format = path.toLowerCase().endsWith('.qmd') ? 'qmd' : 'ipynb'
 
   // Resolve the ref (branch or SHA) to an immutable commit SHA so the post is pinned. The author's
   // repo can be any public repo, so this lookup is UNauthenticated (a lab-scoped token couldn't read
@@ -37,12 +38,12 @@ export async function publishPost(_prev: PublishState, fd: FormData): Promise<Pu
     sha = (await r.json()).sha
   }
 
-  const base = slugify(path.split('/').pop()!.replace(/\.ipynb$/i, '')) || 'post'
+  const base = slugify(path.split('/').pop()!.replace(/\.(ipynb|qmd)$/i, '')) || 'post'
   const slug = `${base}-${Math.random().toString(36).slice(2, 8)}`
 
   const { error: insErr } = await supabase.from('posts').insert({
     slug, author_id: user.id, repo_url: repoUrl, commit_sha: sha,
-    notebook_path: path, format: 'ipynb', status: 'building', license,
+    notebook_path: path, format, status: 'building', license,
     title: base.replace(/-/g, ' '),
   })
   if (insErr) return { error: `Could not create the post: ${insErr.message}` }

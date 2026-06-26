@@ -13,7 +13,7 @@ type Post = {
   id: string; slug: string; title: string; summary: string | null; tags: string[]
   notebook_path: string; rendered_html: string | null; status: string; build_log: string | null
   has_strategy: boolean; featured: boolean; repo_url: string; commit_sha: string | null; license: string | null
-  author_id: string; submission_id: string | null
+  author_id: string; submission_id: string | null; format: string
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -28,7 +28,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const supabase = await createClient()
   const { data } = await supabase
     .from('posts')
-    .select('id, slug, title, summary, tags, notebook_path, rendered_html, status, build_log, has_strategy, featured, repo_url, commit_sha, license, author_id, submission_id')
+    .select('id, slug, title, summary, tags, notebook_path, rendered_html, status, build_log, has_strategy, featured, repo_url, commit_sha, license, author_id, submission_id, format')
     .eq('slug', slug)
     .maybeSingle()
   if (!data) notFound()
@@ -178,14 +178,18 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
       <div className="mt-10 border-t border-border pt-6">
         <div className="flex flex-wrap gap-3 text-sm">
-          <a href={colabUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: 'sm' }))}>Open in Colab ↗</a>
-          <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>Download .ipynb ↗</a>
+          {post.format === 'ipynb' && (
+            <a href={colabUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: 'sm' }))}>Open in Colab ↗</a>
+          )}
+          <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>Download {post.format === 'qmd' ? '.qmd' : '.ipynb'} ↗</a>
           <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>View source ↗</a>
           {post.license && <span className="self-center text-xs text-muted-foreground">License: {post.license}</span>}
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Make it yours: open in Colab, then <em>File → Save a copy in Drive</em> (or <em>in GitHub</em>) to get your own editable copy.
-        </p>
+        {post.format === 'ipynb' && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Make it yours: open in Colab, then <em>File → Save a copy in Drive</em> (or <em>in GitHub</em>) to get your own editable copy.
+          </p>
+        )}
       </div>
 
       {/* Discussion */}
