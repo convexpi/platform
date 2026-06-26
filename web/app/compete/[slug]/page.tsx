@@ -29,6 +29,15 @@ export default async function CompetitionOverview({ params }: { params: Promise<
   // submitting strategy code. Render a dedicated "connect" overview for them.
   const arenaConfig = (cohort.arena_config ?? {}) as Record<string, unknown>
   const isArena = Object.keys(arenaConfig).length > 0
+
+  // What data is this competition graded on? Prefer an explicit note in market_config, else a
+  // sensible default by type.
+  const marketCfg = (cohort.market_config ?? {}) as Record<string, unknown>
+  const dataNote = (typeof marketCfg.data_description === 'string' && marketCfg.data_description)
+    || (isArena
+      ? 'Played live against a limit order book — your agent posts and takes orders in real time.'
+      : 'Graded on a hidden synthetic market: a simulated cross-section of stocks with planted alphas to discover, split into in-sample and out-of-sample. Your score is the out-of-sample Sharpe — the part that can’t be overfit.')
+
   if (isArena) {
     // Per-competition websocket URL: an explicit ws_url in arena_config wins, then a slug-specific
     // env (book runs on its own server), then the shared default.
@@ -44,6 +53,9 @@ export default async function CompetitionOverview({ params }: { params: Promise<
             <Badge>{cohort.status}</Badge>
           </div>
           {cohort.description && <p className="text-muted-foreground text-lg">{cohort.description}</p>}
+          <div className="mt-4 rounded-lg border border-border bg-secondary/30 px-4 py-3 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Data &amp; scoring:</span> {dataNote}
+          </div>
         </div>
 
         <div className="flex gap-3 mb-8">
@@ -161,6 +173,9 @@ MyAgent('your-handle', server='${arenaUrl}').run()`}</pre>
         {cohort.description && (
           <p className="text-muted-foreground text-lg">{cohort.description}</p>
         )}
+        <div className="mt-4 rounded-lg border border-border bg-secondary/30 px-4 py-3 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Data &amp; scoring:</span> {dataNote}
+        </div>
         <div className="flex gap-6 mt-4 text-sm text-muted-foreground">
           {cohort.start_date && (
             <span>Starts {new Date(cohort.start_date).toLocaleDateString('en-US', { dateStyle: 'long' })}</span>
