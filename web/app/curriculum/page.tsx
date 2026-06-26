@@ -145,6 +145,21 @@ const ELECTIVES: Mission[] = [
     concepts: ['Turnover', 'Transaction costs', 'Break-even cost', 'No-trade band', 'Capacity'],
     prereqs: 'Mission 3 or any strategy you want to pressure-test for real-world costs.',
   },
+  {
+    number: 9,
+    title: 'Pairs trading',
+    subtitle: 'Statistical arbitrage & the spurious-cointegration trap',
+    duration: '60–90 min',
+    colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_09_pairs_trading/notebook.ipynb',
+    objectives: [
+      'Distinguish correlation from cointegration — and why only the latter is tradeable',
+      'Test for cointegration (OLS hedge ratio + ADF / Engle–Granger) and form a spread',
+      'Trade the spread with a z-score entry/exit rule and evaluate it',
+      'See spurious cointegration: false equilibria that break out of sample',
+    ],
+    concepts: ['Cointegration', 'Hedge ratio', 'Spread z-score', 'Mean reversion', 'Spurious cointegration'],
+    prereqs: 'Mission 1 (out-of-sample thinking). A first time-series strategy.',
+  },
 ]
 
 function MissionCard({ m }: { m: Mission }) {
@@ -232,7 +247,7 @@ export default function CurriculumPage() {
       {/* Course at a glance */}
       <div className="grid sm:grid-cols-4 gap-4 mb-12 rounded-xl border bg-muted/20 p-6">
         {[
-          { label: 'Missions',        value: '6 + 2' },
+          { label: 'Missions',        value: '6 + 3' },
           { label: 'Total time',      value: '10–15 hrs' },
           { label: 'Format',          value: 'Colab notebooks' },
           { label: 'Assessment',      value: 'OOS Sharpe ratio' },
