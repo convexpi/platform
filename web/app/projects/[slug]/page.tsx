@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { toggleVote, addComment, deleteComment } from '../social-actions'
+import { toggleVote, addComment, deleteComment, submitToLeaderboard } from '../social-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,7 @@ type Post = {
   id: string; slug: string; title: string; summary: string | null; tags: string[]
   notebook_path: string; rendered_html: string | null; status: string; build_log: string | null
   has_strategy: boolean; repo_url: string; commit_sha: string | null; license: string | null
-  author_id: string
+  author_id: string; submission_id: string | null
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -27,12 +27,21 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const supabase = await createClient()
   const { data } = await supabase
     .from('posts')
-    .select('id, slug, title, summary, tags, notebook_path, rendered_html, status, build_log, has_strategy, repo_url, commit_sha, license, author_id')
+    .select('id, slug, title, summary, tags, notebook_path, rendered_html, status, build_log, has_strategy, repo_url, commit_sha, license, author_id, submission_id')
     .eq('slug', slug)
     .maybeSingle()
   if (!data) notFound()
   const post = data as Post
   const { data: { user } } = await supabase.auth.getUser()
+  const isAuthor = user?.id === post.author_id
+
+  // Leaderboard tie-in: a graded OOS report, or a pending submission, or eligible to submit.
+  let grade: { oos_sharpe: number | null; overfitting_ratio: number | null } | null = null
+  if (post.submission_id) {
+    const { data: gr } = await supabase.from('grade_reports')
+      .select('oos_sharpe, overfitting_ratio').eq('submission_id', post.submission_id).maybeSingle()
+    grade = gr
+  }
 
   // posts.author_id references auth.users, not profiles, so fetch the profile separately.
   const { data: author } = await supabase
@@ -92,6 +101,33 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           </span>
         )}
       </div>
+
+      {/* Leaderboard tie-in */}
+      {post.has_strategy && (
+        <div className="mb-8">
+          {grade ? (
+            <Link href="/compete/open-leaderboard/leaderboard"
+              className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm">
+              <span className="text-emerald-700 font-medium">✓ Reproduced by ConvexPi</span>
+              <span className="text-emerald-700">· OOS Sharpe <span className="font-mono font-semibold">{grade.oos_sharpe?.toFixed(2) ?? '—'}</span></span>
+              <span className="text-xs text-emerald-600">on the permanent leaderboard ↗</span>
+            </Link>
+          ) : post.submission_id ? (
+            <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2 text-sm text-muted-foreground">
+              ⏳ Grading this strategy on hidden out-of-sample data…
+            </span>
+          ) : isAuthor ? (
+            <form action={submitToLeaderboard}>
+              <input type="hidden" name="post_id" value={post.id} />
+              <input type="hidden" name="slug" value={post.slug} />
+              <button type="submit" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+                Submit strategy to the leaderboard
+              </button>
+              <p className="mt-1 text-xs text-muted-foreground">We&apos;ll grade your <code>MyStrategy</code> on hidden out-of-sample data and post the score here.</p>
+            </form>
+          ) : null}
+        </div>
+      )}
 
       {post.status === 'building' && (
         <div className="rounded-lg border border-border bg-muted/30 px-6 py-10 text-center text-sm text-muted-foreground">
