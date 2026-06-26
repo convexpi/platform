@@ -67,6 +67,7 @@ export default async function CompetitionOverview({ params }: { params: Promise<
 
     return (
       <div className="container mx-auto px-4 py-10 max-w-3xl">
+        <Link href="/compete" className="text-sm text-muted-foreground hover:text-foreground">← Competitions</Link>
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold">{cohort.name}</h1>
@@ -135,6 +136,7 @@ export default async function CompetitionOverview({ params }: { params: Promise<
       (slug === 'arena-open' ? (process.env.NEXT_PUBLIC_ARENA_URL ?? '') : '')
     return (
       <div className="container mx-auto px-4 py-10 max-w-3xl">
+        <Link href="/compete" className="text-sm text-muted-foreground hover:text-foreground">← Competitions</Link>
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold">{cohort.name}</h1>
@@ -252,6 +254,7 @@ MyAgent('your-handle', server='${arenaUrl}').run()`}</pre>
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-3xl">
+      <Link href="/compete" className="text-sm text-muted-foreground hover:text-foreground">← Competitions</Link>
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
