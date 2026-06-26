@@ -40,6 +40,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   // Leaderboard tie-in: a graded OOS report, or a pending submission, or eligible to submit.
   let grade: { oos_sharpe: number | null; overfitting_ratio: number | null } | null = null
   let subStatus: string | null = null
+  let fwd: { avg: number; n: number } | null = null
   if (post.submission_id) {
     const { data: gr } = await supabase.from('grade_reports')
       .select('oos_sharpe, overfitting_ratio').eq('submission_id', post.submission_id).maybeSingle()
@@ -48,6 +49,11 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       const { data: s } = await supabase.from('submissions').select('status').eq('id', post.submission_id).maybeSingle()
       subStatus = s?.status ?? null
     }
+    // Rolling forward (paper-trading) Sharpe — written nightly by forward_runner.
+    const { data: fs } = await supabase.from('forward_scores')
+      .select('forward_sharpe').eq('submission_id', post.submission_id)
+    const vals = (fs ?? []).map(r => r.forward_sharpe as number | null).filter((v): v is number => v != null)
+    if (vals.length) fwd = { avg: vals.reduce((a, b) => a + b, 0) / vals.length, n: vals.length }
   }
 
   // posts.author_id references auth.users, not profiles, so fetch the profile separately.
@@ -129,6 +135,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
               className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm">
               <span className="text-emerald-700 font-medium">✓ Reproduced by ConvexPi</span>
               <span className="text-emerald-700">· OOS Sharpe <span className="font-mono font-semibold">{grade.oos_sharpe?.toFixed(2) ?? '—'}</span></span>
+              {fwd && <span className="text-emerald-700">· forward <span className="font-mono font-semibold">{fwd.avg.toFixed(2)}</span> <span className="text-xs">({fwd.n}d rolling)</span></span>}
               <span className="text-xs text-emerald-600">on the permanent leaderboard ↗</span>
             </Link>
           ) : subStatus === 'failed' ? (
