@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { renderMarkdown } from '@/lib/markdown'
+import { loadSurvey } from '@/lib/content'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,13 @@ export default async function SurveyPage({ params }: { params: Promise<{ slug: s
     .eq('slug', slug).eq('status', 'published').single()
   if (!survey) notFound()
   const s = survey as Survey
+
+  // Prefer the community-edited file in the content repo; fall back to the DB copy.
+  const body = (await loadSurvey(slug)) ?? s.markdown
+  // GitHub-backed community editing (fork+PR for non-collaborators) + revision history.
+  const CONTENT_REPO = 'https://github.com/convexpi/content'
+  const editUrl = `${CONTENT_REPO}/edit/main/surveys/${slug}.md`
+  const historyUrl = `${CONTENT_REPO}/commits/main/surveys/${slug}.md`
 
   // Dynamic "Key papers": the topic's wiki'd papers, most-cited first.
   let papers: KeyPaper[] = []
@@ -54,9 +62,18 @@ export default async function SurveyPage({ params }: { params: Promise<{ slug: s
         {s.summary && <p className="text-muted-foreground text-lg leading-relaxed mt-3">{s.summary}</p>}
       </div>
 
+      {/* Community wiki action bar — editing via GitHub */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground border-y border-border py-2 mt-6">
+        <span className="font-medium text-foreground">Community wiki</span>
+        <a href={editUrl} target="_blank" rel="noopener noreferrer"
+          className="hover:text-foreground underline underline-offset-4">✎ Edit</a>
+        <a href={historyUrl} target="_blank" rel="noopener noreferrer"
+          className="hover:text-foreground underline underline-offset-4">⟲ History</a>
+      </div>
+
       <article
         className="prose-sm max-w-none text-foreground mt-6"
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(s.markdown) }}
+        dangerouslySetInnerHTML={{ __html: renderMarkdown(body) }}
       />
 
       {/* Dynamic key-papers, drawn from the topic's wikis so it stays fresh */}

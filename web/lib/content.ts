@@ -75,18 +75,25 @@ export async function loadContentIndex(): Promise<ContentIndex> {
 // ---------------------------------------------------------------------------
 
 export async function loadWiki(paperId: string): Promise<string | null> {
+  return loadContentFile('wikis', paperId)
+}
+
+// Community-edited topic surveys live at content/surveys/<slug>.md (same
+// GitHub-backed edit/history flow as the paper wikis).
+export async function loadSurvey(slug: string): Promise<string | null> {
+  return loadContentFile('surveys', slug)
+}
+
+async function loadContentFile(dir: string, name: string): Promise<string | null> {
   // Local clone path
   if (LOCAL_PATH) {
-    const p = join(LOCAL_PATH, 'wikis', `${paperId}.md`)
+    const p = join(LOCAL_PATH, dir, `${name}.md`)
     if (existsSync(p)) return readFileSync(p, 'utf-8')
   }
 
   // GitHub raw URL
   try {
-    const resp = await fetch(
-      `${GITHUB_RAW_BASE}/wikis/${paperId}.md`,
-      { next: { revalidate: 3600 } },
-    )
+    const resp = await fetch(`${GITHUB_RAW_BASE}/${dir}/${name}.md`, { next: { revalidate: 3600 } })
     if (!resp.ok) return null
     return resp.text()
   } catch {
