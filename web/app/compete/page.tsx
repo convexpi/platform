@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Countdown } from '@/components/countdown'
+import { ArenaLiveLeader } from '@/components/arena-live-leader'
 import type { Cohort } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -35,7 +36,7 @@ const DIFF_STYLE: Record<string, string> = {
   Advanced: 'text-red-600 border-red-200',
 }
 
-interface Live { leaderName?: string; leaderMetric?: string; players: number; live: boolean }
+interface Live { leaderName?: string; leaderMetric?: string; players: number; live: boolean; sessionId?: string | null; points?: number[] }
 
 async function enrich(db: ReturnType<typeof createAdminClient>, c: Cohort, kind: string): Promise<Live> {
   try {
@@ -50,16 +51,23 @@ async function enrich(db: ReturnType<typeof createAdminClient>, c: Cohort, kind:
       return { leaderName, leaderMetric: top?.[0] ? `Sharpe ${Number(top[0].sharpe).toFixed(2)}` : undefined, players: count ?? 0, live: true }
     }
     if (kind === 'Arena') {
-      const { data } = await db.from('leaderboard').select('agent_id, username, pnl_dollars')
+      const { data } = await db.from('leaderboard').select('agent_id, username, pnl_dollars, session_id')
         .eq('cohort_id', c.id).neq('agent_id', '__seed__').order('pnl_dollars', { ascending: false })
-      const rows = (data ?? []) as { agent_id: string; username: string | null; pnl_dollars: number }[]
+      const rows = (data ?? []) as { agent_id: string; username: string | null; pnl_dollars: number; session_id: string }[]
       const players = new Set(rows.map(r => r.agent_id)).size
       const top = rows[0]
+      const sessionId = top?.session_id ?? null
       const pnl = top ? Math.round(Number(top.pnl_dollars)) : 0
+      let points: number[] = []
+      if (top && sessionId) {
+        const { data: ser } = await db.from('arena_rankings').select('pnl_cents, tick')
+          .eq('session_id', sessionId).eq('agent_id', top.agent_id).order('tick', { ascending: false }).limit(24)
+        points = (ser ?? []).map(r => Number(r.pnl_cents) / 100).reverse()
+      }
       return {
         leaderName: top ? (top.username ?? top.agent_id) : undefined,
         leaderMetric: top ? `${pnl >= 0 ? '+' : '−'}$${Math.abs(pnl).toLocaleString()}` : undefined,
-        players, live: true,
+        players, live: true, sessionId, points,
       }
     }
     // Lab
@@ -193,17 +201,22 @@ function CompetitionCard({ c, m, l }: { c: Cohort; m: Meta; l: Live }) {
         {m.hook && <p className="text-sm text-muted-foreground mt-2 leading-snug">{m.hook}</p>}
         {m.data && <p className="text-xs text-muted-foreground/80 mt-1">Data: {m.data}</p>}
 
-        {/* Living scoreboard line */}
-        <div className="mt-3 rounded-lg bg-secondary/40 px-3 py-2 text-xs">
-          {l.leaderName ? (
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate"><span className="mr-1">🥇</span><span className="font-medium text-foreground">{l.leaderName}</span> · {l.leaderMetric}</span>
-              <span className="text-muted-foreground shrink-0">{l.players > 0 ? `${l.players} ${m.kind === 'Arena' ? 'agents' : 'players'}` : 'baselines only'}</span>
-            </div>
-          ) : (
-            <span className="text-muted-foreground">No entries yet — <span className="text-foreground font-medium">be the first →</span></span>
-          )}
-        </div>
+        {/* Living scoreboard line — realtime + sparkline for arenas, static for the rest */}
+        {m.kind === 'Arena' ? (
+          <ArenaLiveLeader cohortId={c.id} sessionId={l.sessionId ?? null}
+            leaderName={l.leaderName} leaderMetric={l.leaderMetric} players={l.players} points={l.points ?? []} />
+        ) : (
+          <div className="mt-3 rounded-lg bg-secondary/40 px-3 py-2 text-xs">
+            {l.leaderName ? (
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate"><span className="mr-1">🥇</span><span className="font-medium text-foreground">{l.leaderName}</span> · {l.leaderMetric}</span>
+                <span className="text-muted-foreground shrink-0">{l.players > 0 ? `${l.players} players` : 'baselines only'}</span>
+              </div>
+            ) : (
+              <span className="text-muted-foreground">No entries yet — <span className="text-foreground font-medium">be the first →</span></span>
+            )}
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between">
