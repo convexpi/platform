@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { FACTORS, CATEGORY_LABELS, OOS_SURVIVAL_LABELS, type Factor } from '@/lib/research-data'
+import { createClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Research Library — ConvexPi',
@@ -53,22 +56,46 @@ function FactorCard({ factor }: { factor: Factor }) {
   )
 }
 
-export default function ResearchPage() {
+export default async function ResearchPage() {
   const categories = [...new Set(FACTORS.map(f => f.category))]
+  const db = await createClient()
+  const { data: surveyRows } = await db.from('surveys')
+    .select('slug, title, summary').eq('status', 'published').order('title')
+  const surveys = (surveyRows ?? []) as { slug: string; title: string; summary: string | null }[]
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-5xl">
 
       {/* Header */}
-      <div className="mb-12 max-w-2xl">
+      <div className="mb-10 max-w-2xl">
         <p className="text-xs font-medium tracking-widest text-primary uppercase mb-3">Research Library</p>
         <h1 className="text-4xl font-serif mb-4">Equity Factor Research</h1>
         <p className="text-muted-foreground text-lg leading-relaxed">
           A guided tour through the empirical asset pricing literature — from classic factors
-          to the replication crisis. Each entry covers economic intuition, key papers, and
-          honest out-of-sample survival evidence.
+          to the replication crisis. Read the deep <strong className="text-foreground font-medium">topic surveys</strong>,
+          scan the <strong className="text-foreground font-medium">factor reference</strong> below, then
+          recompute it yourself in the replications.
         </p>
       </div>
+
+      {/* Topic surveys — the deep syntheses */}
+      {surveys.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-4">Topic surveys</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {surveys.map(s => (
+              <Link key={s.slug} href={`/surveys/${s.slug}`}
+                className="group block rounded-xl border bg-card hover:border-primary/40 hover:shadow-sm transition-all p-5">
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{s.title}</h3>
+                {s.summary && <p className="text-sm text-muted-foreground leading-snug mt-1 line-clamp-2">{s.summary}</p>}
+              </Link>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Surveys synthesize the paper-wiki library into a narrative per topic. The factor cards below are the quick reference.
+          </p>
+        </section>
+      )}
 
       {/* OOS survival key */}
       <div className="flex flex-wrap gap-2 mb-10">

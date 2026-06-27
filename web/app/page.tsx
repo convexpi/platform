@@ -130,7 +130,8 @@ export default async function Home() {
                 title: 'Read the field, honestly',
                 desc: 'A simulation-first curriculum and a research library that is candid about which anomalies survive and which decayed after publication.',
                 links: [
-                  { t: 'Curriculum — 6 missions', href: '/curriculum', ext: false },
+                  { t: 'Curriculum — 9 missions', href: '/curriculum', ext: false },
+                  { t: 'Topic surveys', href: '/surveys', ext: false },
                   { t: 'Research papers + wikis', href: '/papers', ext: false },
                   { t: 'Anomaly graveyard', href: '/anomalies', ext: false },
                 ],
