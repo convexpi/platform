@@ -61,9 +61,10 @@ async function enrich(db: ReturnType<typeof createAdminClient>, c: Cohort, kind:
       const pnl = top ? Math.round(Number(top.pnl_dollars)) : 0
       let points: number[] = []
       if (top && sessionId) {
-        const { data: ser } = await db.from('arena_rankings').select('pnl_cents, tick')
-          .eq('session_id', sessionId).eq('agent_id', top.agent_id).order('tick', { ascending: false }).limit(24)
-        points = (ser ?? []).map(r => Number(r.pnl_cents) / 100).reverse()
+        const { data: hrow } = await db.from('arena_rankings').select('pnl_history')
+          .eq('session_id', sessionId).eq('agent_id', top.agent_id).limit(1).maybeSingle()
+        const h = (hrow?.pnl_history ?? []) as unknown[]
+        points = Array.isArray(h) ? h.map(Number).filter(n => Number.isFinite(n)) : []
       }
       return {
         leaderName: top ? (top.username ?? top.agent_id) : undefined,
