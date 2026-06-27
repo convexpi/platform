@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { setCuration } from './actions'
+import { setCuration, setPaperUrl } from './actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Papers — Admin' }
@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Papers — Admin' }
 interface Paper {
   id: string; title: string; year: number | null; journal: string | null
   citation_count: number | null; curation_status: string; topics: string[] | null
-  wiki_generated_at: string | null; fulltext_source: string | null
+  wiki_generated_at: string | null; fulltext_source: string | null; manual_pdf_url: string | null
 }
 
 const CUR_STYLE: Record<string, string> = {
@@ -30,15 +30,16 @@ const VIEWS: { key: string; label: string }[] = [
 ]
 
 export default async function AdminPapers(
-  { searchParams }: { searchParams: Promise<{ q?: string; view?: string; status?: string; page?: string }> },
+  { searchParams }: { searchParams: Promise<{ q?: string; view?: string; status?: string; page?: string; err?: string }> },
 ) {
   const sp = await searchParams
   const q = sp.q
+  const err = sp.err
   const view = sp.view || sp.status || 'queue'   // `status` kept for backward-compat links
   const page = Math.max(1, parseInt(sp.page || '1', 10) || 1)
   const db = createAdminClient()
 
-  const cols = 'id, title, year, journal, citation_count, curation_status, topics, wiki_generated_at, fulltext_source'
+  const cols = 'id, title, year, journal, citation_count, curation_status, topics, wiki_generated_at, fulltext_source, manual_pdf_url'
   let query = db.from('papers').select(cols, { count: 'exact' })
 
   if (q?.trim()) {
@@ -81,6 +82,10 @@ export default async function AdminPapers(
             className="pl-3 pr-3 py-1.5 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring w-56" />
         </form>
       </div>
+
+      {err && (
+        <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">{err}</div>
+      )}
 
       {/* Filter views */}
       {!q && (
@@ -125,10 +130,25 @@ export default async function AdminPapers(
                     {p.wiki_generated_at && <> · <span className="text-blue-600">wiki</span></>}
                   </p>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 min-w-[220px]">
                   {p.fulltext_source
                     ? <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{p.fulltext_source}</span>
                     : <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">none</span>}
+                  {/* Paste a public PDF link for this paper */}
+                  <form action={setPaperUrl} className="mt-1.5 flex items-center gap-1">
+                    <input type="hidden" name="id" value={p.id} />
+                    <input
+                      name="url"
+                      defaultValue={p.manual_pdf_url ?? ''}
+                      placeholder="paste public PDF link…"
+                      className="flex-1 min-w-0 px-2 py-1 text-[11px] rounded border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                    <button type="submit" className="text-[11px] px-2 py-1 rounded border hover:bg-muted whitespace-nowrap">save</button>
+                  </form>
+                  {p.manual_pdf_url && (
+                    <a href={p.manual_pdf_url} target="_blank" rel="noopener noreferrer"
+                      className="text-[10px] text-blue-600 hover:underline break-all">{p.manual_pdf_url}</a>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground tabular-nums">{p.citation_count ?? '—'}</td>
                 <td className="px-4 py-3 text-right">
