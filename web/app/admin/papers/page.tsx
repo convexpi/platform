@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Papers — Admin' }
 interface Paper {
   id: string; title: string; year: number | null; journal: string | null
   citation_count: number | null; curation_status: string; topics: string[] | null
-  wiki_generated_at: string | null
+  wiki_generated_at: string | null; fulltext_source: string | null
 }
 
 const CUR_STYLE: Record<string, string> = {
@@ -18,50 +18,97 @@ const CUR_STYLE: Record<string, string> = {
   rejected: 'bg-red-100 text-red-600',
 }
 
-export default async function AdminPapers({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
-  const { q, status } = await searchParams
+const PAGE_SIZE = 100
+
+// Filter views. `wiki_no_ft` is the "wiki pages without a paper (full text)" filter.
+const VIEWS: { key: string; label: string }[] = [
+  { key: 'queue', label: 'Review queue' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'rejected', label: 'Rejected' },
+  { key: 'all', label: 'All papers' },
+  { key: 'wiki_no_ft', label: 'Wiki · no full text' },
+]
+
+export default async function AdminPapers(
+  { searchParams }: { searchParams: Promise<{ q?: string; view?: string; status?: string; page?: string }> },
+) {
+  const sp = await searchParams
+  const q = sp.q
+  const view = sp.view || sp.status || 'queue'   // `status` kept for backward-compat links
+  const page = Math.max(1, parseInt(sp.page || '1', 10) || 1)
   const db = createAdminClient()
 
-  let query = db.from('papers')
-    .select('id, title, year, journal, citation_count, curation_status, topics, wiki_generated_at')
-    .order('citation_count', { ascending: false, nullsFirst: false })
-    .limit(60)
-  if (q?.trim()) query = query.ilike('title', `*${q.trim()}*`)
-  else query = query.eq('curation_status', status || 'candidate')
+  const cols = 'id, title, year, journal, citation_count, curation_status, topics, wiki_generated_at, fulltext_source'
+  let query = db.from('papers').select(cols, { count: 'exact' })
 
-  const { data } = await query
+  if (q?.trim()) {
+    query = query.ilike('title', `*${q.trim()}*`)
+  } else if (view === 'wiki_no_ft') {
+    query = query.not('wiki_markdown', 'is', null).is('fulltext_source', null)
+  } else if (view === 'all') {
+    // no curation/status filter
+  } else if (view === 'approved' || view === 'rejected') {
+    query = query.eq('curation_status', view)
+  } else {
+    query = query.eq('curation_status', 'candidate')   // review queue (default)
+  }
+
+  query = query
+    .order('citation_count', { ascending: false, nullsFirst: false })
+    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
+
+  const { data, count } = await query
   const papers = (data ?? []) as Paper[]
+  const total = count ?? 0
+  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
+  const to = Math.min(page * PAGE_SIZE, total)
+
+  const linkFor = (extra: Record<string, string | number | undefined>) => {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (!q) params.set('view', view)
+    for (const [k, v] of Object.entries(extra)) if (v !== undefined && v !== '') params.set(k, String(v))
+    return `/admin/papers?${params.toString()}`
+  }
 
   return (
     <div className="p-8 max-w-5xl">
       <div className="flex items-center justify-between gap-4 mb-2">
         <h1 className="text-2xl font-semibold">Papers</h1>
         <form method="GET" className="flex items-center gap-2">
-          <input name="q" defaultValue={q} placeholder="Search title…"
+          <input name="q" defaultValue={q} placeholder="Search all titles…"
             className="pl-3 pr-3 py-1.5 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring w-56" />
         </form>
       </div>
-      <p className="text-sm text-muted-foreground mb-5">
-        {q ? `Search results for “${q}”` : 'Review queue: highest-cited candidates'} — approve to protect
-        from the relevance sweep, reject to remove from the public library.
-      </p>
 
+      {/* Filter views */}
       {!q && (
-        <div className="flex gap-1 mb-5 text-xs">
-          {['candidate', 'approved', 'rejected'].map(s => (
-            <Link key={s} href={`/admin/papers?status=${s}`}
+        <div className="flex flex-wrap gap-1 mb-3 text-xs">
+          {VIEWS.map(v => (
+            <Link key={v.key} href={`/admin/papers?view=${v.key}`}
               className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
-                (status || 'candidate') === s ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-              }`}>{s}</Link>
+                view === v.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+              }`}>{v.label}</Link>
           ))}
         </div>
       )}
+
+      <p className="text-sm text-muted-foreground mb-5">
+        {q
+          ? <>Search results for “{q}” — <strong>{total.toLocaleString()}</strong> match</>
+          : view === 'wiki_no_ft'
+            ? <><strong>{total.toLocaleString()}</strong> wiki pages have no full-text paper on file. Find an open-access version and we can ground/verify the wiki against it.</>
+            : <><strong>{total.toLocaleString()}</strong> papers — approve to protect from the relevance sweep, reject to remove from the public library.</>}
+        {total > 0 && <> · showing {from.toLocaleString()}–{to.toLocaleString()}</>}
+      </p>
 
       <div className="rounded-xl border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-secondary/50">
               <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Title</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Full text</th>
               <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground">Cites</th>
               <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
               <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground">Actions</th>
@@ -78,6 +125,11 @@ export default async function AdminPapers({ searchParams }: { searchParams: Prom
                     {p.wiki_generated_at && <> · <span className="text-blue-600">wiki</span></>}
                   </p>
                 </td>
+                <td className="px-4 py-3">
+                  {p.fulltext_source
+                    ? <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{p.fulltext_source}</span>
+                    : <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">none</span>}
+                </td>
                 <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground tabular-nums">{p.citation_count ?? '—'}</td>
                 <td className="px-4 py-3 text-right">
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${CUR_STYLE[p.curation_status] ?? CUR_STYLE.candidate}`}>{p.curation_status}</span>
@@ -89,10 +141,23 @@ export default async function AdminPapers({ searchParams }: { searchParams: Prom
                 </td>
               </tr>
             ))}
-            {papers.length === 0 && <tr><td colSpan={4} className="px-4 py-12 text-center text-sm text-muted-foreground">No papers found.</td></tr>}
+            {papers.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">No papers found.</td></tr>}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {lastPage > 1 && (
+        <div className="flex items-center justify-between mt-4 text-sm">
+          {page > 1
+            ? <Link href={linkFor({ page: page - 1 })} className="px-3 py-1.5 rounded-md border hover:bg-muted">← Prev</Link>
+            : <span className="px-3 py-1.5 text-muted-foreground/50">← Prev</span>}
+          <span className="text-muted-foreground">Page {page} of {lastPage.toLocaleString()}</span>
+          {page < lastPage
+            ? <Link href={linkFor({ page: page + 1 })} className="px-3 py-1.5 rounded-md border hover:bg-muted">Next →</Link>
+            : <span className="px-3 py-1.5 text-muted-foreground/50">Next →</span>}
+        </div>
+      )}
     </div>
   )
 }
