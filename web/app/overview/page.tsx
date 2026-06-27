@@ -42,6 +42,7 @@ const PILLARS: Pillar[] = [
     blurb: 'Everything is open. Replicate the canon, publish your work, earn reputation.',
     items: [
       { href: '/replications', label: 'Replication library', desc: 'Canonical strategies, recomputed and scored OOS.' },
+      { href: '/surveys', label: 'Topic surveys', desc: 'The literature on each anomaly, synthesized from the wikis.' },
       { href: '/projects', label: 'Projects showcase', desc: 'Publish a notebook from GitHub; we run, render, and rank it.' },
       { href: '/papers', label: 'Papers & wikis', desc: 'The finance-ML literature, summarized.' },
       { href: '/anomalies', label: 'Anomaly graveyard', desc: 'Which published edges actually survived.' },

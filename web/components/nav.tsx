@@ -92,6 +92,7 @@ export function Nav() {
       label: 'Research',
       items: [
         { href: '/research',     label: 'Factor research' },
+        { href: '/surveys',      label: 'Topic surveys' },
         { href: '/papers',       label: 'Papers' },
         { href: '/anomalies',    label: 'Anomaly graveyard' },
         { href: '/replications', label: 'Replications' },
