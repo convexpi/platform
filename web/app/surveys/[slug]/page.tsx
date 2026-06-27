@@ -8,6 +8,41 @@ import { loadSurvey } from '@/lib/content'
 export const dynamic = 'force-dynamic'
 
 interface Survey { slug: string; title: string; topic: string | null; summary: string | null; markdown: string }
+
+// Curated cross-links: each survey → the clean-room replications that recompute it.
+// Links go to the replication's Colab notebook in the convexpi/replications repo.
+const RELATED_REPLICATIONS: Record<string, { name: string; slug: string }[]> = {
+  momentum: [
+    { name: 'Jegadeesh-Titman momentum', slug: 'jegadeesh_titman_momentum' },
+    { name: 'Industry momentum', slug: 'moskowitz_grinblatt_industry_momentum' },
+    { name: 'Time-series (trend) momentum', slug: 'moskowitz_ooi_pedersen_trend' },
+    { name: 'Asset-class momentum', slug: 'asness_moskowitz_pedersen_asset_momentum' },
+  ],
+  value: [
+    { name: 'Fama-French HML', slug: 'fama_french_hml' },
+    { name: 'Earnings yield (Basu)', slug: 'basu_earnings_yield' },
+    { name: 'Cash-flow yield (Lakonishok)', slug: 'lakonishok_cashflow_yield' },
+    { name: 'Dividend yield (Litzenberger-Ramaswamy)', slug: 'litzenberger_ramaswamy_dividend_yield' },
+  ],
+  quality: [
+    { name: 'Gross profitability (Novy-Marx)', slug: 'novy_marx_profitability' },
+    { name: 'Operating profitability / RMW', slug: 'fama_french_op_profitability' },
+    { name: 'Accruals (Sloan)', slug: 'sloan_accruals' },
+    { name: 'Investment / asset growth', slug: 'cooper_gulen_schill_investment' },
+  ],
+  'low-volatility': [
+    { name: 'Betting against beta', slug: 'frazzini_pedersen_bab' },
+    { name: 'Idiosyncratic volatility', slug: 'ang_idiosyncratic_volatility' },
+    { name: 'MAX (lottery)', slug: 'bali_cakici_whitelaw_max' },
+  ],
+  size: [{ name: 'Fama-French SMB', slug: 'fama_french_smb' }],
+  reversal: [
+    { name: 'Short-term reversal', slug: 'jegadeesh_short_term_reversal' },
+    { name: 'Long-term reversal (De Bondt-Thaler)', slug: 'debondt_thaler_long_term_reversal' },
+  ],
+}
+const colab = (slug: string) =>
+  `https://colab.research.google.com/github/convexpi/replications/blob/main/notebooks/${slug}.ipynb`
 interface KeyPaper { id: string; title: string; authors: { name?: string }[] | null; year: number | null; journal: string | null }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -93,6 +128,31 @@ export default async function SurveyPage({ params }: { params: Promise<{ slug: s
           </ul>
         </section>
       )}
+
+      {/* Cross-links: replicate it + explore related research surfaces */}
+      <section className="mt-10 rounded-xl border border-border bg-secondary/30 p-6">
+        <h2 className="text-base font-semibold mb-3">Replicate &amp; explore</h2>
+        {(RELATED_REPLICATIONS[s.slug] ?? []).length > 0 && (
+          <div className="mb-4">
+            <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase mb-2">Clean-room replications</p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              {RELATED_REPLICATIONS[s.slug].map(r => (
+                <li key={r.slug}>
+                  <a href={colab(r.slug)} target="_blank" rel="noopener noreferrer"
+                    className="text-foreground hover:text-[#C9A34E]">{r.name} ↗</a>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground mt-1">Recomputed from building blocks and scored out of sample · <Link href="/replications" className="underline underline-offset-2">all replications</Link></p>
+          </div>
+        )}
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+          <Link href="/research" className="text-foreground hover:text-[#C9A34E]">Factor reference →</Link>
+          <Link href="/anomalies" className="text-foreground hover:text-[#C9A34E]">Anomaly graveyard →</Link>
+          <Link href="/papers" className="text-foreground hover:text-[#C9A34E]">All papers →</Link>
+          <Link href="/surveys" className="text-foreground hover:text-[#C9A34E]">Other surveys →</Link>
+        </div>
+      </section>
     </div>
   )
 }
