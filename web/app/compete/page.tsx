@@ -7,6 +7,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Countdown } from '@/components/countdown'
 import { ArenaLiveLeader } from '@/components/arena-live-leader'
+import { STARTERS } from '@/lib/starters'
 import type { Cohort } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -219,11 +220,13 @@ function CompetitionCard({ c, m, l }: { c: Cohort; m: Meta; l: Live }) {
         )}
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between">
-          {c.end_date ? (
-            <span className="text-xs text-muted-foreground">{c.status === 'ended' ? 'Ended' : 'Ends'} {new Date(c.end_date).toLocaleDateString()}</span>
-          ) : <span className="text-xs text-muted-foreground">No deadline</span>}
-          <div className="flex gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <a href={STARTERS[m.kind].url} target="_blank" rel="noopener noreferrer"
+              className="text-xs text-[#C9A34E] hover:text-[#b8922d] font-medium">Starter notebook ↗</a>
+            {c.end_date && <span className="text-xs text-muted-foreground">{c.status === 'ended' ? 'Ended' : 'Ends'} {new Date(c.end_date).toLocaleDateString()}</span>}
+          </div>
+          <div className="flex gap-2 shrink-0">
             <Link href={`/compete/${c.slug}`}><Button variant="outline" size="sm">View</Button></Link>
             {c.status === 'active' && <Link href={enterHref}><Button size="sm">{enterLabel}</Button></Link>}
           </div>

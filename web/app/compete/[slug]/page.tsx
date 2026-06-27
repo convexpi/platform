@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { ArenaBook } from '@/components/arena-book'
 import { submitSp500Model } from '../sp500-actions'
+import { STARTERS, competitionKind } from '@/lib/starters'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +31,7 @@ export default async function CompetitionOverview({ params }: { params: Promise<
   // submitting strategy code. Render a dedicated "connect" overview for them.
   const arenaConfig = (cohort.arena_config ?? {}) as Record<string, unknown>
   const isArena = Object.keys(arenaConfig).length > 0
+  const starter = STARTERS[competitionKind(cohort)]
 
   // What data is this competition graded on? Prefer an explicit note in market_config, else a
   // sensible default by type.
@@ -104,10 +106,13 @@ export default async function CompetitionOverview({ params }: { params: Promise<
         </div>
 
         <h2 className="text-lg font-semibold mb-2">Compete</h2>
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-sm text-muted-foreground mb-3">
           Submit a Python <code>predict(history)</code> that forecasts the next day&apos;s return. It&apos;s
           scored walk-forward on real prices and re-scored daily as new sessions arrive — ranked by the
           Sharpe of its directional bets. Sign of your forecast = your bet (up/down).
+        </p>
+        <p className="text-sm mb-4">
+          New here? <a href={starter.url} target="_blank" rel="noopener noreferrer" className="text-[#C9A34E] hover:text-[#b8922d] font-medium">Open the starter notebook ↗</a> — {starter.blurb}
         </p>
         {user ? (
           <form action={submitSp500Model} className="space-y-3">
@@ -152,6 +157,9 @@ export default async function CompetitionOverview({ params }: { params: Promise<
           <Link href={`/compete/${slug}/leaderboard`} className={cn(buttonVariants())}>
             Live rankings
           </Link>
+          <a href={starter.url} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: 'outline' }))}>
+            Starter notebook ↗
+          </a>
           <Link href="/exchange" className={cn(buttonVariants({ variant: 'outline' }))}>
             How matching works
           </Link>
