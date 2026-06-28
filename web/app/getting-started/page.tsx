@@ -26,11 +26,22 @@ function Step({ number, title, children }: { number: number; title: string; chil
 export default function GettingStarted() {
   return (
     <div className="container mx-auto px-4 py-16 max-w-2xl">
-      <div className="mb-12">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold mb-3">Get started in 30 minutes</h1>
         <p className="text-muted-foreground text-lg">
           One path. No choices required. Follow these five steps.
         </p>
+      </div>
+
+      <div className="mb-10 grid sm:grid-cols-2 gap-3 text-sm">
+        <Link href="/classroom/join" className="rounded-lg border px-4 py-3 hover:bg-muted/30 transition-colors">
+          <div className="font-medium text-foreground">Have a class join code?</div>
+          <div className="text-muted-foreground text-xs">Join your classroom →</div>
+        </Link>
+        <Link href="/teach" className="rounded-lg border px-4 py-3 hover:bg-muted/30 transition-colors">
+          <div className="font-medium text-foreground">Teaching a course?</div>
+          <div className="text-muted-foreground text-xs">See the instructor guide →</div>
+        </Link>
       </div>
 
       <div className="flex flex-col">

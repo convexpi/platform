@@ -83,6 +83,8 @@ export function Nav() {
       label: 'Learn',
       items: [
         { href: '/getting-started', label: 'Get started' },
+        { href: '/curriculum', label: 'Curriculum' },
+        { href: '/teach', label: 'Teach (instructors)' },
         { href: '/exchange', label: 'How the exchange works' },
         { href: '/lessons/market-making', label: 'Market making' },
         ...(user ? [{ href: '/tutor', label: 'Tutor' }] : []),
