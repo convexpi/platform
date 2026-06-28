@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Curriculum — ConvexPi',
-  description: 'A six-mission course in quantitative equity research. Each mission builds the next, culminating in a generalising alpha strategy.',
+  description: 'A nine-mission course in quantitative equity research — six core missions that build to a generalising alpha strategy, plus three advanced electives on market microstructure and trading costs.',
 }
 
 // Curated reading list tying a mission to the on-site research it draws on.
@@ -357,8 +357,8 @@ export default function CurriculumPage() {
       <div className="mb-12 max-w-2xl">
         <h1 className="text-3xl font-bold mb-3">Curriculum</h1>
         <p className="text-muted-foreground text-lg leading-relaxed">
-          Six core missions in quantitative equity research, each building on the last —
-          from the basic overfitting problem through to real data and execution — plus
+          Nine missions in quantitative equity research: six core missions, each building on the
+          last — from the basic overfitting problem through to real data and execution — plus three
           advanced electives on market microstructure and trading costs.
           All missions run in Google Colab. No local installation required.
         </p>
