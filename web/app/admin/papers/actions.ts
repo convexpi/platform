@@ -38,20 +38,28 @@ export async function setPaperUrl(fd: FormData): Promise<void> {
     redirect(`/admin/papers?view=wiki_no_ft&err=${encodeURIComponent('Not a valid http(s) URL')}`)
   }
 
-  // Confirm the link actually resolves to a PDF before trusting it.
+  // Confirm the link actually resolves to a PDF before trusting it, and flag image-only scans
+  // (no text layer) so the curator knows the grounding pass will need OCR / a better copy.
   let isPdf = false
+  let likelyScan = false
   try {
     const r = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 convexpi-admin', Accept: 'application/pdf,*/*' },
       signal: AbortSignal.timeout(30_000),
     })
-    const ct = (r.headers.get('content-type') || '').toLowerCase()
     if (r.ok) {
-      if (ct.includes('pdf')) {
-        isPdf = true
-      } else {
-        const head = new Uint8Array(await r.arrayBuffer()).slice(0, 5)
-        isPdf = String.fromCharCode(...head) === '%PDF-'
+      const buf = new Uint8Array(await r.arrayBuffer())
+      const ct = (r.headers.get('content-type') || '').toLowerCase()
+      const head = new TextDecoder('latin1').decode(buf.slice(0, 5))
+      isPdf = ct.includes('pdf') || head === '%PDF-'
+      if (isPdf) {
+        // Heuristic: a scanned PDF is image XObjects with no embedded fonts. Text PDFs declare
+        // fonts (/BaseFont, /FontFile*). Imperfect (object streams can hide these), so it only
+        // warns — never blocks. Sample the first ~2 MB, enough to see the resource dictionaries.
+        const sample = new TextDecoder('latin1').decode(buf.slice(0, 2_000_000))
+        const hasFont = /\/(BaseFont|FontFile\d?)\b/.test(sample)
+        const hasImageCodec = /\/(DCTDecode|CCITTFaxDecode|JBIG2Decode|JPXDecode)\b/.test(sample)
+        likelyScan = hasImageCodec && !hasFont
       }
     }
   } catch {
@@ -65,5 +73,8 @@ export async function setPaperUrl(fd: FormData): Promise<void> {
   }
 
   await db.from('papers').update({ manual_pdf_url: url, fulltext_source: 'manual' }).eq('id', id)
+  if (likelyScan) {
+    redirect(`/admin/papers?view=wiki_no_ft&err=${encodeURIComponent('Saved — but this looks like a scanned PDF (no text layer). It will need OCR, or find a text version.')}`)
+  }
   revalidatePath('/admin/papers')
 }
