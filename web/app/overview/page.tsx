@@ -16,7 +16,8 @@ const PILLARS: Pillar[] = [
     blurb: 'Why out-of-sample is the only honest test — and the tools to find real signal.',
     items: [
       { href: '/getting-started', label: 'Get started', desc: 'The 30-minute on-ramp.' },
-      { href: '/curriculum', label: 'Curriculum (6 missions)', desc: 'The core course: overfitting → alpha discovery.' },
+      { href: '/curriculum', label: 'Curriculum (9 missions)', desc: 'The core course: overfitting → alpha discovery.' },
+      { href: '/teach', label: 'Teach (instructors)', desc: 'Run it as a course: classroom, auto-grading, dashboard.' },
       { href: 'https://github.com/convexpi/missions/tree/main/lectures', label: 'Lectures', desc: 'p-hacking, the Information Coefficient.', ext: true },
       { href: '/lessons/market-making', label: 'Market-making lesson', desc: 'Earn the spread; manage inventory & adverse selection.' },
       { href: '/exchange', label: 'How the exchange works', desc: 'The matching engine, in plain English.' },

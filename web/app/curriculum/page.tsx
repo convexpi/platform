@@ -238,7 +238,7 @@ export default function CurriculumPage() {
           <Link href="/getting-started" className={cn(buttonVariants())}>
             Start Mission 1
           </Link>
-          <Link href="/classroom/new" className={cn(buttonVariants({ variant: 'outline' }))}>
+          <Link href="/teach" className={cn(buttonVariants({ variant: 'outline' }))}>
             Run as a course
           </Link>
         </div>
@@ -284,14 +284,15 @@ export default function CurriculumPage() {
           For a semester course, Missions 1–3 work well as the first half with
           Missions 4–6 as the research project phase. Classroom cohorts give
           students a private leaderboard graded on OOS Sharpe — not in-sample
-          performance.
+          performance. Pair the missions with the{' '}
+          <Link href="/surveys" className="underline underline-offset-4">topic surveys</Link> as reading.
         </p>
         <div className="flex gap-3">
-          <Link href="/classroom/new" className={cn(buttonVariants({ size: 'sm' }))}>
-            Create a classroom cohort
+          <Link href="/teach" className={cn(buttonVariants({ size: 'sm' }))}>
+            Instructor guide
           </Link>
-          <Link href="/getting-started" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
-            Instructor getting-started guide
+          <Link href="/classroom/new" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+            Create a classroom
           </Link>
         </div>
       </div>
