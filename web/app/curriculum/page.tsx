@@ -8,6 +8,14 @@ export const metadata: Metadata = {
   description: 'A six-mission course in quantitative equity research. Each mission builds the next, culminating in a generalising alpha strategy.',
 }
 
+// Curated reading list tying a mission to the on-site research it draws on.
+type Reading = {
+  surveys?: { slug: string; title: string }[]
+  replications?: { slug: string; name: string }[]
+  links?: { label: string; href: string; ext?: boolean }[]
+  note: string
+}
+
 type Mission = {
   number: number
   title: string
@@ -17,7 +25,12 @@ type Mission = {
   objectives: string[]
   concepts: string[]
   prereqs: string | null
+  reading?: Reading
 }
+
+// Replication notebooks live in the replications repo, one per slug.
+const repColab = (slug: string) =>
+  `https://colab.research.google.com/github/convexpi/replications/blob/main/notebooks/${slug}.ipynb`
 
 const MISSIONS: Mission[] = [
   {
@@ -34,6 +47,11 @@ const MISSIONS: Mission[] = [
     ],
     concepts: ['Information coefficient', 'Rolling IC', 'OOS Sharpe ratio', 'Overfitting ratio', 'Cross-sectional ranking'],
     prereqs: 'Basic Python and NumPy. No finance background required.',
+    reading: {
+      surveys: [{ slug: 'factor-zoo', title: 'The Factor Zoo & Replication Crisis' }],
+      links: [{ label: 'Anomaly graveyard — what survived', href: '/anomalies' }],
+      note: 'The survey is the “why” behind this mission: most published edges are in-sample artefacts that vanish out of sample.',
+    },
   },
   {
     number: 2,
@@ -49,6 +67,14 @@ const MISSIONS: Mission[] = [
     ],
     concepts: ['Bid-ask spread', 'Adverse selection', 'Inventory risk', 'Market impact', 'PnL attribution'],
     prereqs: 'Mission 1 or familiarity with financial returns.',
+    reading: {
+      links: [
+        { label: 'How the exchange works', href: '/exchange' },
+        { label: 'Market-making lesson', href: '/lessons/market-making' },
+        { label: 'Agent arena (live book)', href: '/agents' },
+      ],
+      note: 'These explain the matching engine and the spread/inventory trade-off before you put an agent on the live book.',
+    },
   },
   {
     number: 3,
@@ -64,6 +90,11 @@ const MISSIONS: Mission[] = [
     ],
     concepts: ['Walk-forward validation', 'Multiple testing / p-hacking', 'Signal decay', 'Sharpe ratio additivity', 'IC correlation'],
     prereqs: 'Mission 1. Basic statistics (t-tests, correlation).',
+    reading: {
+      surveys: [{ slug: 'factor-zoo', title: 'The Factor Zoo & Replication Crisis' }],
+      links: [{ label: 'Anomaly graveyard — decay histories', href: '/anomalies' }],
+      note: 'The replication-crisis survey covers the multiple-testing burden head-on: with hundreds of factors tested, a high t-stat is not enough.',
+    },
   },
   {
     number: 4,
@@ -79,6 +110,20 @@ const MISSIONS: Mission[] = [
     ],
     concepts: ['Factor zoo', 'Portfolio diversification', 'Minimum-variance weighting', 'Factor correlation', 'OOS replication'],
     prereqs: 'Mission 3. Familiarity with the research library.',
+    reading: {
+      surveys: [
+        { slug: 'momentum', title: 'Momentum' },
+        { slug: 'value', title: 'Value' },
+        { slug: 'quality', title: 'Quality' },
+      ],
+      replications: [
+        { slug: 'jegadeesh_titman_momentum', name: 'Momentum (WML)' },
+        { slug: 'fama_french_hml', name: 'Value (HML)' },
+        { slug: 'novy_marx_profitability', name: 'Profitability (RMW)' },
+      ],
+      links: [{ label: 'Full replication library', href: '/replications' }],
+      note: 'Read the survey for each factor, then run its verified replication — these are the building blocks you combine in this mission.',
+    },
   },
   {
     number: 5,
@@ -94,6 +139,14 @@ const MISSIONS: Mission[] = [
     ],
     concepts: ['Survivorship bias', 'Look-ahead bias', 'Price adjustment', 'Factor seasonality', 'Universe construction'],
     prereqs: 'Missions 1–3. Recommended: review the anomaly tracker.',
+    reading: {
+      surveys: [{ slug: 'size', title: 'Size' }],
+      links: [
+        { label: 'Anomaly graveyard — does it hold on real data?', href: '/anomalies' },
+        { label: 'Papers & wikis library', href: '/papers' },
+      ],
+      note: 'The size survey is a cautionary tale of how data choices (delisting, microcaps, survivorship) make or break a “real” result.',
+    },
   },
   {
     number: 6,
@@ -109,6 +162,13 @@ const MISSIONS: Mission[] = [
     ],
     concepts: ['Reinforcement learning', 'Execution optimisation', 'TWAP / VWAP benchmarks', 'Market impact models', 'Slippage'],
     prereqs: 'Missions 1–5. Familiarity with basic RL concepts helpful.',
+    reading: {
+      links: [
+        { label: 'The realistic exchange (L3)', href: '/exchange/realistic' },
+        { label: 'Agent arena', href: '/agents' },
+      ],
+      note: 'Execution lives in the microstructure detail — read the L3 exchange page, then layer an execution policy on top of an alpha signal.',
+    },
   },
 ]
 
@@ -129,6 +189,13 @@ const ELECTIVES: Mission[] = [
     ],
     concepts: ['Queue position', 'FIFO priority', 'Order-by-order (L3)', 'Latency', 'Adverse selection'],
     prereqs: 'Mission 2 (the limit-order book). Connects to the live L3 arena.',
+    reading: {
+      links: [
+        { label: 'The realistic exchange (L3)', href: '/exchange/realistic' },
+        { label: 'Realistic exchange competition', href: '/compete/arena-l3' },
+      ],
+      note: 'The L3 page explains queue position and the cancel race in plain English; the competition is where you trade a real order-by-order book.',
+    },
   },
   {
     number: 8,
@@ -144,6 +211,14 @@ const ELECTIVES: Mission[] = [
     ],
     concepts: ['Turnover', 'Transaction costs', 'Break-even cost', 'No-trade band', 'Capacity'],
     prereqs: 'Mission 3 or any strategy you want to pressure-test for real-world costs.',
+    reading: {
+      replications: [
+        { slug: 'jegadeesh_short_term_reversal', name: 'Short-term reversal (high turnover)' },
+        { slug: 'sloan_accruals', name: 'Accruals' },
+      ],
+      links: [{ label: 'Replication library — net-of-cost OOS Sharpe', href: '/replications' }],
+      note: 'The replication library reports gross vs net-of-cost OOS Sharpe; the high-turnover reversal strategy is the cleanest example of an edge that costs erase.',
+    },
   },
   {
     number: 9,
@@ -159,6 +234,11 @@ const ELECTIVES: Mission[] = [
     ],
     concepts: ['Cointegration', 'Hedge ratio', 'Spread z-score', 'Mean reversion', 'Spurious cointegration'],
     prereqs: 'Mission 1 (out-of-sample thinking). A first time-series strategy.',
+    reading: {
+      surveys: [{ slug: 'reversal', title: 'Reversal' }],
+      replications: [{ slug: 'gatev_pairs_trading', name: 'Pairs trading (distance)' }],
+      note: 'Run the canonical Gatev et al. distance pairs replication, then read the reversal survey for the mean-reversion economics behind the spread.',
+    },
   },
 ]
 
@@ -219,6 +299,54 @@ function MissionCard({ m }: { m: Mission }) {
           <p className="text-sm text-muted-foreground">{m.prereqs}</p>
         </div>
       </div>
+
+      {m.reading && (
+        <div className="border-t bg-muted/10 px-6 py-5">
+          <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-3">
+            Reading &amp; references
+          </p>
+          <div className="flex flex-wrap gap-x-10 gap-y-4">
+            {!!(m.reading.surveys?.length || m.reading.links?.length) && (
+              <div>
+                <p className="text-xs text-muted-foreground/70 mb-1.5">Read</p>
+                <ul className="space-y-1">
+                  {m.reading.surveys?.map(s => (
+                    <li key={s.slug}>
+                      <Link href={`/surveys/${s.slug}`} className="text-sm text-foreground hover:text-[#C9A34E] underline underline-offset-4">
+                        {s.title} survey
+                      </Link>
+                    </li>
+                  ))}
+                  {m.reading.links?.map(l => (
+                    <li key={l.href}>
+                      {l.ext ? (
+                        <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-sm text-foreground hover:text-[#C9A34E] underline underline-offset-4">{l.label} ↗</a>
+                      ) : (
+                        <Link href={l.href} className="text-sm text-foreground hover:text-[#C9A34E] underline underline-offset-4">{l.label}</Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {m.reading.replications && m.reading.replications.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground/70 mb-1.5">Replicate &amp; run</p>
+                <ul className="space-y-1">
+                  {m.reading.replications.map(r => (
+                    <li key={r.slug}>
+                      <a href={repColab(r.slug)} target="_blank" rel="noopener noreferrer" className="text-sm text-foreground hover:text-[#C9A34E] underline underline-offset-4">
+                        {r.name} ↗
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3 max-w-2xl leading-snug">{m.reading.note}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -284,8 +412,11 @@ export default function CurriculumPage() {
           For a semester course, Missions 1–3 work well as the first half with
           Missions 4–6 as the research project phase. Classroom cohorts give
           students a private leaderboard graded on OOS Sharpe — not in-sample
-          performance. Pair the missions with the{' '}
-          <Link href="/surveys" className="underline underline-offset-4">topic surveys</Link> as reading.
+          performance. Each mission above carries its own{' '}
+          <span className="text-foreground">Reading &amp; references</span> — the{' '}
+          <Link href="/surveys" className="underline underline-offset-4">topic surveys</Link> and{' '}
+          <Link href="/replications" className="underline underline-offset-4">replications</Link> it draws on —
+          to assign alongside the notebook.
         </p>
         <div className="flex gap-3">
           <Link href="/teach" className={cn(buttonVariants({ size: 'sm' }))}>
