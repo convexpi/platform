@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { Sparkline } from '@/components/sparkline'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -51,16 +52,29 @@ export default async function ClassroomOverview({ params }: { params: Promise<{ 
     .eq('cohort_id', cohort.id)
     .eq('status', 'completed')
 
-  // Check if current user has submitted
+  // Current user's own graded submissions — for the personal progress card
   let userHasSubmitted = false
+  let myBestOos: number | null = null
+  const myOosSeries: number[] = []
+  let mySubmissionCount = 0
   if (user) {
-    const { count } = await supabase
+    const { data: mine } = await supabase
       .from('submissions')
-      .select('id', { count: 'exact', head: true })
+      .select('submitted_at, status, grade_reports(oos_sharpe)')
       .eq('cohort_id', cohort.id)
       .eq('user_id', user.id)
       .eq('status', 'completed')
-    userHasSubmitted = (count ?? 0) > 0
+      .order('submitted_at', { ascending: true })
+    mySubmissionCount = (mine ?? []).length
+    userHasSubmitted = mySubmissionCount > 0
+    for (const row of mine ?? []) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const report = Array.isArray((row as any).grade_reports) ? (row as any).grade_reports[0] : (row as any).grade_reports
+      const oos = report?.oos_sharpe as number | null | undefined
+      if (oos == null) continue
+      myOosSeries.push(oos)
+      if (myBestOos == null || oos > myBestOos) myBestOos = oos
+    }
   }
 
   // Top 3 from grade_reports
@@ -157,6 +171,49 @@ export default async function ClassroomOverview({ params }: { params: Promise<{ 
             Members
           </Link>
         </div>
+      )}
+
+      {/* Your progress — personal learning loop */}
+      {isMember && userHasSubmitted && (
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold mb-4">Your progress</h2>
+          <div className="rounded-lg border p-5 flex flex-wrap items-center gap-x-10 gap-y-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Best OOS Sharpe</p>
+              <p className={`text-2xl font-bold font-mono ${myBestOos != null && myBestOos > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {myBestOos != null ? myBestOos.toFixed(3) : '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Graded submissions</p>
+              <p className="text-2xl font-bold font-mono">{mySubmissionCount}</p>
+            </div>
+            {myOosSeries.length >= 2 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">OOS over attempts</p>
+                <div className="flex items-center gap-2">
+                  <Sparkline points={myOosSeries} width={120} height={28} />
+                  {(() => {
+                    const d = myOosSeries[myOosSeries.length - 1] - myOosSeries[0]
+                    return (
+                      <span className={`text-xs font-mono ${d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {d >= 0 ? '▲' : '▼'} {Math.abs(d).toFixed(2)}
+                      </span>
+                    )
+                  })()}
+                </div>
+              </div>
+            )}
+            <div className="ml-auto">
+              <Link href={`/classroom/${slug}/submit`} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+                Improve your score →
+              </Link>
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            The honest goal isn’t a high in-sample score — it’s a trajectory that holds up out of sample.
+          </p>
+        </section>
       )}
 
       {/* How scoring works */}
