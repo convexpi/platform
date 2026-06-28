@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,6 +13,15 @@ import { SeasonManager } from '@/components/season-manager'
 import { Sparkline } from '@/components/sparkline'
 
 export const dynamic = 'force-dynamic'
+
+// Mission ids, in order. Keep in sync with components/mission-progress.tsx.
+// First six are the core course; the last three are electives.
+const MISSION_IDS = [
+  'mission_01_overfitting', 'mission_02_marketmaker', 'mission_03_alpha_discovery',
+  'mission_04_strategy_library', 'mission_05_real_data', 'mission_06_advanced_agents',
+  'mission_07_queue_dynamics', 'mission_08_cost_of_trading', 'mission_09_pairs_trading',
+]
+const CORE_MISSION_COUNT = 6
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,6 +60,8 @@ type StudentSummary = {
   latestStatus: string | null
   /** OOS Sharpe per graded submission, oldest → newest (learning trajectory) */
   oosSeries: number[]
+  /** Mission ids the student has marked complete (from user_metadata) */
+  completedMissions: string[]
 }
 
 // A coarse learning-state classification, derived from a student's submissions.
@@ -160,6 +172,7 @@ export default async function InstructorDashboard({
       lastSubmittedAt: null,
       latestStatus: null,
       oosSeries: [],
+      completedMissions: [],
     })
   }
   // submissions arrive newest-first; iterate oldest-first so the series reads left→right in time.
@@ -195,6 +208,24 @@ export default async function InstructorDashboard({
     (b.bestOosSharpe ?? -Infinity) - (a.bestOosSharpe ?? -Infinity)
   )
 
+  // Mission completion lives in auth.users.user_metadata, reachable only via the
+  // service-role admin client. Degrade gracefully if it's unavailable.
+  let missionDataAvailable = false
+  try {
+    const admin = createAdminClient()
+    missionDataAvailable = true
+    await Promise.all(students.map(async (s) => {
+      const { data, error } = await admin.auth.admin.getUserById(s.userId)
+      if (error || !data?.user) return
+      const cm = data.user.user_metadata?.completed_missions
+      s.completedMissions = Array.isArray(cm)
+        ? (cm as string[]).filter(id => MISSION_IDS.includes(id))
+        : []
+    }))
+  } catch {
+    missionDataAvailable = false
+  }
+
   // Load arena seasons for this cohort
   const { data: rawSessions } = await supabase
     .from('arena_sessions')
@@ -206,7 +237,6 @@ export default async function InstructorDashboard({
 
   const pending   = submissions.filter(s => s.status === 'pending').length
   const running   = submissions.filter(s => s.status === 'running').length
-  const completed = submissions.filter(s => s.status === 'completed').length
   const failed    = submissions.filter(s => s.status === 'failed').length
   const nonSubmitters = students.filter(s => s.submissions === 0)
   const notSubmitted = nonSubmitters.length
@@ -337,13 +367,23 @@ export default async function InstructorDashboard({
 
       {/* Student progress table */}
       <section className="mb-12">
-        <h2 className="text-lg font-semibold mb-4">Student progress</h2>
+        <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+          <h2 className="text-lg font-semibold">Student progress</h2>
+          {missionDataAvailable && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" /> core</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> elective</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/25" /> not done</span>
+            </div>
+          )}
+        </div>
         <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Student</TableHead>
                 <TableHead>Progress</TableHead>
+                {missionDataAvailable && <TableHead>Missions</TableHead>}
                 <TableHead className="text-right">Subs</TableHead>
                 <TableHead className="text-right">Best OOS Sharpe</TableHead>
                 <TableHead>OOS trajectory</TableHead>
@@ -370,6 +410,30 @@ export default async function InstructorDashboard({
                         {prog.label}
                       </span>
                     </TableCell>
+                    {missionDataAvailable && (
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-0.5">
+                            {MISSION_IDS.map((id, idx) => {
+                              const done = s.completedMissions.includes(id)
+                              const core = idx < CORE_MISSION_COUNT
+                              return (
+                                <span
+                                  key={id}
+                                  title={`Mission ${idx + 1}${core ? '' : ' (elective)'}${done ? ' ✓' : ''}`}
+                                  className={`h-2 w-2 rounded-full ${
+                                    done ? (core ? 'bg-green-500' : 'bg-amber-500') : 'bg-muted-foreground/25'
+                                  }`}
+                                />
+                              )
+                            })}
+                          </div>
+                          <span className="text-xs text-muted-foreground font-mono">
+                            {s.completedMissions.filter(id => MISSION_IDS.indexOf(id) < CORE_MISSION_COUNT).length}/{CORE_MISSION_COUNT}
+                          </span>
+                        </div>
+                      </TableCell>
+                    )}
                     <TableCell className="text-right">{s.submissions}</TableCell>
                     <TableCell className="text-right font-mono">{fmt(s.bestOosSharpe)}</TableCell>
                     <TableCell>
