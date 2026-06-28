@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/table'
 import type { Cohort, Submission, GradeReport, Profile } from '@/lib/types'
 import { SeasonManager } from '@/components/season-manager'
+import { Sparkline } from '@/components/sparkline'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +48,19 @@ type StudentSummary = {
   alphasDiscovered: number | null
   lastSubmittedAt: string | null
   latestStatus: string | null
+  /** OOS Sharpe per graded submission, oldest → newest (learning trajectory) */
+  oosSeries: number[]
+}
+
+// A coarse learning-state classification, derived from a student's submissions.
+type Progress = { label: string; cls: string }
+
+function classifyProgress(s: StudentSummary): Progress {
+  if (s.submissions === 0)     return { label: 'Not started',  cls: 'bg-muted text-muted-foreground' }
+  if (s.bestOosSharpe == null) return { label: 'Grading',      cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' }
+  if (s.bestOosSharpe >= 0.5)  return { label: 'Strong',       cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' }
+  if (s.bestOosSharpe > 0)     return { label: 'Generalizing', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' }
+  return { label: 'Overfitting', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' }
 }
 
 // ---------------------------------------------------------------------------
@@ -145,9 +159,11 @@ export default async function InstructorDashboard({
       alphasDiscovered: null,
       lastSubmittedAt: null,
       latestStatus: null,
+      oosSeries: [],
     })
   }
-  for (const s of submissions) {
+  // submissions arrive newest-first; iterate oldest-first so the series reads left→right in time.
+  for (const s of [...submissions].reverse()) {
     const uid = s.user_id
     if (!studentMap.has(uid)) continue
     const entry = studentMap.get(uid)!
@@ -156,6 +172,8 @@ export default async function InstructorDashboard({
       entry.lastSubmittedAt = s.submitted_at
       entry.latestStatus = s.status
     }
+    const gr0 = toArray(s.grade_reports)[0] ?? null
+    if (gr0?.oos_sharpe != null) entry.oosSeries.push(gr0.oos_sharpe)
     for (const gr of toArray(s.grade_reports)) {
       if (gr.oos_sharpe != null && (entry.bestOosSharpe == null || gr.oos_sharpe > entry.bestOosSharpe)) {
         entry.bestOosSharpe = gr.oos_sharpe
@@ -190,7 +208,8 @@ export default async function InstructorDashboard({
   const running   = submissions.filter(s => s.status === 'running').length
   const completed = submissions.filter(s => s.status === 'completed').length
   const failed    = submissions.filter(s => s.status === 'failed').length
-  const notSubmitted = students.filter(s => s.submissions === 0).length
+  const nonSubmitters = students.filter(s => s.submissions === 0)
+  const notSubmitted = nonSubmitters.length
 
   // Cohort-level aggregate statistics (students who have at least one graded submission)
   const gradedStudents = students.filter(s => s.bestOosSharpe != null)
@@ -301,6 +320,21 @@ export default async function InstructorDashboard({
         </section>
       )}
 
+      {/* Nudge: students who haven't submitted anything yet */}
+      {nonSubmitters.length > 0 && (
+        <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40 px-4 py-3">
+          <p className="text-sm">
+            <span className="font-semibold text-amber-800 dark:text-amber-300">
+              {nonSubmitters.length} {nonSubmitters.length === 1 ? 'student hasn’t' : 'students haven’t'} submitted yet.
+            </span>{' '}
+            <span className="text-muted-foreground">Nudge them to run Mission 1 and submit:</span>
+          </p>
+          <p className="mt-1.5 text-sm font-mono text-amber-800 dark:text-amber-300">
+            {nonSubmitters.map(s => `@${s.username}`).join('  ·  ')}
+          </p>
+        </div>
+      )}
+
       {/* Student progress table */}
       <section className="mb-12">
         <h2 className="text-lg font-semibold mb-4">Student progress</h2>
@@ -309,8 +343,10 @@ export default async function InstructorDashboard({
             <TableHeader>
               <TableRow>
                 <TableHead>Student</TableHead>
-                <TableHead className="text-right">Submissions</TableHead>
+                <TableHead>Progress</TableHead>
+                <TableHead className="text-right">Subs</TableHead>
                 <TableHead className="text-right">Best OOS Sharpe</TableHead>
+                <TableHead>OOS trajectory</TableHead>
                 <TableHead className="text-right">Forward Sharpe</TableHead>
                 <TableHead className="text-right">Alphas found</TableHead>
                 <TableHead>Last status</TableHead>
@@ -318,26 +354,53 @@ export default async function InstructorDashboard({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.map(s => (
-                <TableRow key={s.userId} className={s.submissions === 0 ? 'opacity-50' : ''}>
-                  <TableCell>
-                    <div className="font-medium">{s.displayName}</div>
-                    <div className="text-xs text-muted-foreground">@{s.username}</div>
-                  </TableCell>
-                  <TableCell className="text-right">{s.submissions}</TableCell>
-                  <TableCell className="text-right font-mono">{fmt(s.bestOosSharpe)}</TableCell>
-                  <TableCell className="text-right font-mono">{fmt(s.latestForwardSharpe)}</TableCell>
-                  <TableCell className="text-right">{s.alphasDiscovered ?? '—'}</TableCell>
-                  <TableCell>
-                    {s.latestStatus ? statusBadge(s.latestStatus) : <span className="text-muted-foreground text-xs">none</span>}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {s.lastSubmittedAt
-                      ? new Date(s.lastSubmittedAt).toLocaleString()
-                      : '—'}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {students.map(s => {
+                const prog = classifyProgress(s)
+                const last = s.oosSeries[s.oosSeries.length - 1]
+                const first = s.oosSeries[0]
+                const delta = s.oosSeries.length >= 2 ? last - first : null
+                return (
+                  <TableRow key={s.userId} className={s.submissions === 0 ? 'opacity-60' : ''}>
+                    <TableCell>
+                      <div className="font-medium">{s.displayName}</div>
+                      <div className="text-xs text-muted-foreground">@{s.username}</div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${prog.cls}`}>
+                        {prog.label}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">{s.submissions}</TableCell>
+                    <TableCell className="text-right font-mono">{fmt(s.bestOosSharpe)}</TableCell>
+                    <TableCell>
+                      {s.oosSeries.length >= 2 ? (
+                        <div className="flex items-center gap-2">
+                          <Sparkline points={s.oosSeries} />
+                          {delta != null && (
+                            <span className={`text-xs font-mono ${delta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          {s.oosSeries.length === 1 ? 'one graded' : '—'}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{fmt(s.latestForwardSharpe)}</TableCell>
+                    <TableCell className="text-right">{s.alphasDiscovered ?? '—'}</TableCell>
+                    <TableCell>
+                      {s.latestStatus ? statusBadge(s.latestStatus) : <span className="text-muted-foreground text-xs">none</span>}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {s.lastSubmittedAt
+                        ? new Date(s.lastSubmittedAt).toLocaleString()
+                        : '—'}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
