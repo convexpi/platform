@@ -462,7 +462,7 @@ export default async function Home() {
                 label: 'Lab',
                 accentColor: '#0B1F3A',
                 title: 'Alpha Discovery Lab',
-                desc: 'Write strategies against a synthetic equity panel with planted factor signals. Six structured missions take you from naive overfitting to disciplined out-of-sample evaluation.',
+                desc: 'Write strategies against a synthetic equity panel with planted factor signals. Nine structured missions take you from naive overfitting to disciplined out-of-sample evaluation, with electives on microstructure and trading costs.',
                 bullets: [
                   'Python-native (pandas, numpy, scikit-learn)',
                   'IS / OOS breakdown on every submission',
