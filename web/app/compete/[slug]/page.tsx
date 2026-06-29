@@ -8,7 +8,7 @@ import { ArenaBook } from '@/components/arena-book'
 import { submitSp500Model } from '../sp500-actions'
 import { STARTERS, competitionKind } from '@/lib/starters'
 import { competitionSpec } from '@/lib/competition-spec'
-import { SpecHeader, SpecSection, CanonicalSpecSections } from '@/components/competition-spec'
+import { SpecHeader, SpecSection, SpecNav, CanonicalSpecSections, CANONICAL_NAV } from '@/components/competition-spec'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,8 +67,9 @@ export default async function CompetitionOverview({ params }: { params: Promise<
       <div className="container mx-auto px-4 py-10 max-w-3xl">
         {back}
         <SpecHeader name={cohort.name} status={<Badge>live</Badge>} description={cohort.description} facts={spec.facts} />
+        <SpecNav items={[{ id: 'standings', label: 'Standings' }, ...CANONICAL_NAV, { id: 'get-started', label: 'Get started' }]} />
 
-        <SpecSection title={`Standings${lastDate ? ` · through ${lastDate}` : ''}`}>
+        <SpecSection id="standings" title={`Standings${lastDate ? ` · through ${lastDate}` : ''}`}>
           <div className="rounded-xl border border-border overflow-hidden">
             <table className="w-full text-sm">
               <thead><tr className="bg-secondary/50 text-xs text-muted-foreground">
@@ -95,7 +96,7 @@ export default async function CompetitionOverview({ params }: { params: Promise<
 
         <CanonicalSpecSections spec={spec} dataSummary={dataSummary} />
 
-        <SpecSection title="Get started">
+        <SpecSection id="get-started" title="Get started">
           <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside mb-4">
             <li><a href={starter.url} target="_blank" rel="noopener noreferrer" className="text-[#C9A34E] hover:text-[#b8922d] underline underline-offset-4">Open the starter notebook</a> — pull the real index and backtest <code className="bg-muted px-1 rounded text-xs">predict(history)</code> walk-forward.</li>
             <li>Paste your function below and submit.</li>
@@ -131,6 +132,7 @@ export default async function CompetitionOverview({ params }: { params: Promise<
       <div className="container mx-auto px-4 py-10 max-w-3xl">
         {back}
         <SpecHeader name={cohort.name} status={<Badge>{cohort.status}</Badge>} description={cohort.description} facts={spec.facts} />
+        <SpecNav items={[...(arenaUrl ? [{ id: 'order-book', label: 'Live order book' }] : []), ...CANONICAL_NAV, { id: 'get-started', label: 'Get started' }]} />
 
         <div className="flex gap-3 mb-8 flex-wrap">
           <Link href={`/compete/${slug}/leaderboard`} className={cn(buttonVariants())}>Live rankings</Link>
@@ -138,14 +140,14 @@ export default async function CompetitionOverview({ params }: { params: Promise<
         </div>
 
         {arenaUrl && (
-          <SpecSection title="Live order book">
+          <SpecSection id="order-book" title="Live order book">
             <ArenaBook url={arenaUrl} />
           </SpecSection>
         )}
 
         <CanonicalSpecSections spec={spec} dataSummary={dataSummary} />
 
-        <SpecSection title="Get started">
+        <SpecSection id="get-started" title="Get started">
           {arenaUrl ? (
             <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside mb-4">
               <li><a href={starter.url} target="_blank" rel="noopener noreferrer" className="text-[#C9A34E] hover:text-[#b8922d] underline underline-offset-4">Open the starter notebook</a> — connect a baseline agent and watch the book.</li>
@@ -221,6 +223,7 @@ export default async function CompetitionOverview({ params }: { params: Promise<
       {metaBits.length > 0 && (
         <p className="-mt-4 mb-6 text-sm text-muted-foreground">{metaBits.join(' · ')}</p>
       )}
+      <SpecNav items={[...(top3.length > 0 ? [{ id: 'standings', label: 'Standings' }] : []), ...CANONICAL_NAV, { id: 'get-started', label: 'Get started' }]} />
 
       {/* Primary CTA */}
       {user && cohort.status === 'active' && (
@@ -249,7 +252,7 @@ export default async function CompetitionOverview({ params }: { params: Promise<
 
       {/* Current standings teaser */}
       {top3.length > 0 && (
-        <SpecSection title="Current standings">
+        <SpecSection id="standings" title="Current standings">
           <div className="rounded-lg border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
