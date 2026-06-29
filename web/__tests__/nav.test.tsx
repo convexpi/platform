@@ -69,10 +69,11 @@ describe('Nav', () => {
     expect(screen.getAllByText(/Get started/i).length).toBeGreaterThan(0)
   })
 
-  it('renders the Compete link', () => {
+  it('renders the Competitions link (grouped under the Practice menu)', () => {
     render(<Nav />)
-    // Multiple instances (desktop + mobile drawer) — at least one
-    expect(screen.getAllByRole('link', { name: /Compete/i }).length).toBeGreaterThan(0)
+    // Competitions lives in the "Practice" dropdown / mobile drawer, not as a top-level link.
+    fireEvent.click(screen.getByRole('button', { name: /Open menu/i }))
+    expect(screen.getAllByRole('link', { name: /Competitions/i }).length).toBeGreaterThan(0)
   })
 
   it('does not render Dashboard link when unauthenticated', () => {
@@ -107,11 +108,11 @@ describe('Nav', () => {
     expect(screen.getAllByText(/Sign out/i).length).toBeGreaterThan(0)
   })
 
-  it('highlights active nav link', () => {
+  it('highlights the active nav group', () => {
     ;(usePathname as ReturnType<typeof vi.fn>).mockReturnValue('/compete')
     render(<Nav />)
-    // The /compete link should have text-primary class applied
-    const competeLinks = screen.getAllByRole('link', { name: /Compete/i })
-    expect(competeLinks.some(l => l.className.includes('text-primary'))).toBe(true)
+    // The "Practice" group trigger is highlighted when one of its routes (/compete) is active.
+    const practice = screen.getByRole('button', { name: /Practice/i })
+    expect(practice.className).toContain('text-primary')
   })
 })
