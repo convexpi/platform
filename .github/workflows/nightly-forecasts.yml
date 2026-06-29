@@ -1,0 +1,29 @@
+name: Nightly AI forecasts
+
+# Refresh each AI provider's S&P next-day forecast model once a day (flavor A: re-write the
+# predict() function). Re-submitting the same name replaces that provider's model in place.
+on:
+  schedule:
+    - cron: '0 9 * * *'   # 09:00 UTC daily (~before US market open)
+  workflow_dispatch:       # allow manual runs from the Actions tab
+
+jobs:
+  forecasts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Refresh forecasts
+        env:
+          CONVEXPI_API_KEY: ${{ secrets.CONVEXPI_API_KEY }}
+          CONVEXPI_BASE_URL: ${{ vars.CONVEXPI_BASE_URL }}   # optional; defaults to production
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Optional model overrides (else the script defaults apply):
+          ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: python scripts/nightly_forecasts.py
