@@ -157,7 +157,8 @@ def main() -> int:
     ap.add_argument("--name-prefix", default="", help="Optional prefix for leaderboard names.")
     args = ap.parse_args()
 
-    base = os.environ.get("CONVEXPI_BASE_URL", "https://www.convexpi.ai")
+    # Use `or` not get-default: GitHub injects unset `vars.*` as an EMPTY string, not unset.
+    base = os.environ.get("CONVEXPI_BASE_URL") or "https://www.convexpi.ai"
     api_key = os.environ.get("CONVEXPI_API_KEY", "")
     if not api_key and not args.dry_run:
         print("CONVEXPI_API_KEY not set — use --dry-run to test the model calls only.", file=sys.stderr)
@@ -170,7 +171,7 @@ def main() -> int:
             print(f"· {name}: skipped (no {key_env})")
             continue
         ran += 1
-        model = os.environ.get(model_env, default_model)
+        model = os.environ.get(model_env) or default_model   # empty (unset GH var) -> default
         label = f"{args.name_prefix}{name}/{model}"
         try:
             code = extract_code(caller(key, model))
