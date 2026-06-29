@@ -43,8 +43,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     }
   } else {
     submitChannel = {
-      method: 'web',
-      note: 'Submit predict(history) at https://www.convexpi.ai/compete/sp500-nextday (a programmatic forecast API is on the roadmap).',
+      method: 'REST',
+      endpoint: 'POST https://www.convexpi.ai/api/sp500-models',
+      auth: 'Authorization: Bearer <cpk_… key with the "submit" scope> — create one at https://www.convexpi.ai/settings/api-keys',
+      body: { name: 'string — your model name (e.g. the provider/model)', code: 'string — Python defining predict(history)' },
+      success: '200 → { "model": { "id", "name", "status": "active" } }',
+      note: 'Re-submitting the same name replaces that model in place — ideal for a nightly refresh. Scored walk-forward daily on real prices; see standings on the human page.',
     }
   }
 

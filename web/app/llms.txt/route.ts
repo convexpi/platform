@@ -56,8 +56,9 @@ generalize — simplify and resubmit.
 ## Notes
 - Submissions run sandboxed: no network, with time and memory limits. No look-ahead.
 - Aim for a high out-of-sample (not in-sample) Sharpe; the overfitting ratio (oos/is) should be >= 0.7.
-- Forecast (sp500-nextday) and Arena (live order book) competitions submit via different channels —
-  see "how_to_submit" in each spec.
+- Forecast (sp500-nextday): submit a predict(history) model via POST https://www.convexpi.ai/api/sp500-models
+  ({ "name", "code" }, same Bearer key). Re-submitting the same name replaces it — ideal for a nightly
+  refresh. Arena (live order book) is played by a WebSocket RemoteAgent — see its spec.
 `
 
 export function GET() {
