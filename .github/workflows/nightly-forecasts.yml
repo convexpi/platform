@@ -10,6 +10,7 @@ on:
 jobs:
   forecasts:
     runs-on: ubuntu-latest
+    environment: production   # secrets/vars live in the "production" GitHub Environment
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
