@@ -60,6 +60,26 @@ vi.mock('@/lib/rate-limit', () => {
   }
 })
 
+// The route does its reads/writes through the service (admin) client, not the cookie client.
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({
+    from: vi.fn((table: string) => {
+      if (table === 'submissions') {
+        return {
+          ...makeDedupeChain(),
+          insert: vi.fn(() => ({ select: vi.fn(() => ({ single: mockInsert })) })),
+        }
+      }
+      if (table === 'cohorts') {
+        return {
+          select: () => ({ eq: () => ({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'c1', status: 'active' } }) }) }),
+        }
+      }
+      return {}
+    }),
+  })),
+}))
+
 // Import after mocks are registered
 import { POST } from '@/app/api/submissions/route'
 import { submissionLimiter } from '@/lib/rate-limit'
