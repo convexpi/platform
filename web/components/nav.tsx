@@ -126,14 +126,9 @@ export function Nav() {
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
       <div className="container mx-auto flex h-14 items-center gap-4 px-4">
 
-        {/* Logo */}
+        {/* Logo — the compact mark (C + manifold) on every breakpoint */}
         <Link href="/" className="shrink-0 select-none" aria-label="ConvexPi home">
-          <span className="hidden sm:inline-flex">
-            <ConvexPiLogo />
-          </span>
-          <span className="inline-flex sm:hidden">
-            <ConvexPiLogo showWordmark={false} />
-          </span>
+          <ConvexPiLogo showWordmark={false} />
         </Link>
 
         {/* Desktop nav links */}
@@ -227,7 +222,7 @@ export function Nav() {
             >
               <Menu className="h-5 w-5" />
             </SheetTrigger>
-            <SheetContent side="right" className="w-72">
+            <SheetContent side="right" className="w-72 overflow-y-auto pb-10">
               <SheetHeader>
                 <SheetTitle className="text-left">
                   <ConvexPiLogo />
