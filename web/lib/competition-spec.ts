@@ -17,6 +17,8 @@ export type CompetitionSpec = {
   scoring: { metric: string; definition: string[]; publicLabel: string; public: string; privateLabel: string; private: string }
   /** The data you work with, and how to load the part you may fit on. */
   data: { summary: string; fields?: SpecField[]; howToLoad?: string }
+  /** A few concrete ideas to give a newcomer a foothold (not an exhaustive guide). */
+  approaches: string[]
   /** "How to read your score" — score ranges → meaning, so a newcomer knows what's good. */
   scoreGuide?: { bands: { range: string; meaning: string }[]; note: string }
   /** Quick pre-submission checklist. */
@@ -86,6 +88,12 @@ class MyStrategy(Strategy):
     howToLoad:
       'In the starter notebook, `market.features("train")` and `market.prices("train")` give you the in-sample data to fit and validate on; the test window is held out for scoring.',
   },
+  approaches: [
+    'Start simple: rank stocks by one signal (e.g. momentum), go long the top and short the bottom.',
+    'Combine a few uncorrelated signals — diversification lifts Sharpe more than tuning one harder.',
+    'Prefer fewer parameters: every knob you fit in-sample is a chance to overfit.',
+    'Compare in-sample vs out-of-sample before submitting — if OOS collapses, simplify.',
+  ],
   scoreGuide: {
     bands: [
       { range: '< 0', meaning: 'Noise or overfit — your in-sample edge didn’t survive. Normal at first; this is the lesson.' },
@@ -161,6 +169,11 @@ const FORECAST: CompetitionSpec = {
     howToLoad:
       'The starter notebook pulls the real index history (e.g. via yfinance) so you can write and backtest predict(history) exactly the way it is scored.',
   },
+  approaches: [
+    'Begin with a transparent rule — short-horizon momentum or mean-reversion — before anything fancy.',
+    'Keep it parsimonious: a 2-parameter rule that holds up beats a 20-parameter fit that doesn’t.',
+    'Backtest walk-forward and watch the equity curve, not just the average return.',
+  ],
   scoreGuide: {
     bands: [
       { range: '< 0', meaning: 'Worse than a coin flip — your bets were backwards, or pure noise.' },
@@ -235,6 +248,11 @@ MyAgent("your-handle", server="wss://…").run()`,
     howToLoad:
       'The starter notebook connects a baseline RemoteAgent to the live book so you can watch the state and build from a working quote.',
   },
+  approaches: [
+    'Start from the baseline market maker: quote both sides around the mid and earn the spread.',
+    'Skew or widen your quotes as inventory builds, to limit adverse selection.',
+    'React to the book — pull quotes when the market moves against you (win the cancel race).',
+  ],
   // No fixed score table: PnL is session-relative — the goal is to stay positive against the field.
   checklist: [
     'Your agent handles ticks with no mid (return [] safely).',

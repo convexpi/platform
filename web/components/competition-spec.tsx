@@ -40,12 +40,34 @@ export function SpecHeader({ name, status, description, facts }: {
   )
 }
 
-export function SpecSection({ title, children }: { title: string; children: React.ReactNode }) {
+export function SpecSection({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="mb-10">
+    <section id={id} className="mb-10 scroll-mt-20">
       <h2 className="text-lg font-semibold mb-3">{title}</h2>
       {children}
     </section>
+  )
+}
+
+// The canonical sections CanonicalSpecSections renders, in order — for building the in-page nav.
+export const CANONICAL_NAV = [
+  { id: 'submit', label: 'What you submit' },
+  { id: 'scoring', label: 'How you’re scored' },
+  { id: 'data', label: 'The data' },
+  { id: 'approaches', label: 'Approaches' },
+  { id: 'rules', label: 'Timeline & rules' },
+]
+
+// Sticky in-page section nav (anchors). Pure anchors — no client JS needed.
+export function SpecNav({ items }: { items: { id: string; label: string }[] }) {
+  return (
+    <nav className="sticky top-14 z-30 -mx-4 mb-8 border-b bg-background/90 px-4 py-2 backdrop-blur overflow-x-auto">
+      <div className="flex gap-4 text-sm whitespace-nowrap">
+        {items.map((it) => (
+          <a key={it.id} href={`#${it.id}`} className="text-muted-foreground hover:text-foreground">{it.label}</a>
+        ))}
+      </div>
+    </nav>
   )
 }
 
@@ -54,7 +76,7 @@ export function SpecSection({ title, children }: { title: string; children: Reac
 export function CanonicalSpecSections({ spec, dataSummary }: { spec: CompetitionSpec; dataSummary?: string }) {
   return (
     <>
-      <SpecSection title="What you submit">
+      <SpecSection id="submit" title="What you submit">
         <p className="text-sm text-muted-foreground mb-3"><Prose text={spec.submit.prose} /></p>
         <pre className="rounded-md bg-muted p-3 text-xs overflow-x-auto">{spec.submit.example}</pre>
         {spec.submit.note && <p className="text-xs text-muted-foreground mt-2"><Prose text={spec.submit.note} /></p>}
@@ -70,7 +92,7 @@ export function CanonicalSpecSections({ spec, dataSummary }: { spec: Competition
         )}
       </SpecSection>
 
-      <SpecSection title="How you’re scored">
+      <SpecSection id="scoring" title="How you’re scored">
         <p className="text-sm mb-3">Ranked by <span className="font-medium text-foreground">{spec.scoring.metric}</span>.</p>
         <ul className="space-y-1.5 text-sm text-muted-foreground mb-5 list-disc list-inside">
           {spec.scoring.definition.map((d, i) => <li key={i}><Prose text={d} /></li>)}
@@ -110,7 +132,7 @@ export function CanonicalSpecSections({ spec, dataSummary }: { spec: Competition
         )}
       </SpecSection>
 
-      <SpecSection title="The data">
+      <SpecSection id="data" title="The data">
         <p className="text-sm text-muted-foreground mb-3"><Prose text={dataSummary ?? spec.data.summary} /></p>
         {spec.data.fields && (
           <dl className="space-y-1.5 mb-3">
@@ -130,7 +152,16 @@ export function CanonicalSpecSections({ spec, dataSummary }: { spec: Competition
         )}
       </SpecSection>
 
-      <SpecSection title="Timeline &amp; rules">
+      {spec.approaches.length > 0 && (
+        <SpecSection id="approaches" title="Approaches to try">
+          <ul className="space-y-1.5 text-sm text-muted-foreground list-disc list-inside">
+            {spec.approaches.map((a, i) => <li key={i}><Prose text={a} /></li>)}
+          </ul>
+          <p className="text-xs text-muted-foreground mt-2">Just a foothold — the missions and starter notebook go deeper.</p>
+        </SpecSection>
+      )}
+
+      <SpecSection id="rules" title="Timeline &amp; rules">
         <div className="grid sm:grid-cols-2 gap-6">
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Timeline</p>
