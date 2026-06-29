@@ -58,6 +58,16 @@ export function CanonicalSpecSections({ spec, dataSummary }: { spec: Competition
         <p className="text-sm text-muted-foreground mb-3"><Prose text={spec.submit.prose} /></p>
         <pre className="rounded-md bg-muted p-3 text-xs overflow-x-auto">{spec.submit.example}</pre>
         {spec.submit.note && <p className="text-xs text-muted-foreground mt-2"><Prose text={spec.submit.note} /></p>}
+        {spec.checklist.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">Before you submit</p>
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              {spec.checklist.map((c, i) => (
+                <li key={i} className="flex gap-2"><span className="text-emerald-600">✓</span><span><Prose text={c} /></span></li>
+              ))}
+            </ul>
+          </div>
+        )}
       </SpecSection>
 
       <SpecSection title="How you’re scored">
@@ -79,6 +89,25 @@ export function CanonicalSpecSections({ spec, dataSummary }: { spec: Competition
             </CardContent>
           </Card>
         </div>
+
+        {spec.scoreGuide && (
+          <div className="mt-5">
+            <p className="text-sm font-medium text-foreground mb-2">How to read your score</p>
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full text-sm">
+                <tbody className="divide-y">
+                  {spec.scoreGuide.bands.map((b) => (
+                    <tr key={b.range}>
+                      <td className="px-3 py-2 font-mono text-xs whitespace-nowrap align-top text-foreground w-20">{b.range}</td>
+                      <td className="px-3 py-2 text-muted-foreground"><Prose text={b.meaning} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2"><Prose text={spec.scoreGuide.note} /></p>
+          </div>
+        )}
       </SpecSection>
 
       <SpecSection title="The data">

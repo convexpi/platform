@@ -17,6 +17,10 @@ export type CompetitionSpec = {
   scoring: { metric: string; definition: string[]; publicLabel: string; public: string; privateLabel: string; private: string }
   /** The data you work with, and how to load the part you may fit on. */
   data: { summary: string; fields?: SpecField[]; howToLoad?: string }
+  /** "How to read your score" — score ranges → meaning, so a newcomer knows what's good. */
+  scoreGuide?: { bands: { range: string; meaning: string }[]; note: string }
+  /** Quick pre-submission checklist. */
+  checklist: string[]
   timeline: string[]
   rules: string[]
 }
@@ -82,6 +86,22 @@ class MyStrategy(Strategy):
     howToLoad:
       'In the starter notebook, `market.features("train")` and `market.prices("train")` give you the in-sample data to fit and validate on; the test window is held out for scoring.',
   },
+  scoreGuide: {
+    bands: [
+      { range: '< 0', meaning: 'Noise or overfit — your in-sample edge didn’t survive. Normal at first; this is the lesson.' },
+      { range: '0 – 0.5', meaning: 'A weak but real edge that generalised a little.' },
+      { range: '0.5 – 1.0', meaning: 'Solid — a genuine, tradeable signal.' },
+      { range: '1.0 – 2.0', meaning: 'Strong — top of the class.' },
+      { range: '> 2.0', meaning: 'Suspiciously high — check for look-ahead or leakage before celebrating.' },
+    ],
+    note: 'A negative score isn’t failure — it’s the overfitting lesson made concrete. Iterate: simpler models usually generalise better.',
+  },
+  checklist: [
+    '`on_day` returns an array with one weight per stock.',
+    'No NaNs or infinities in your weights.',
+    'You checked it out-of-sample, not just in-sample, before submitting.',
+    'Your strategy never peeks at future days.',
+  ],
   timeline: [
     'Always open — submit any time; no entry deadline.',
     'Graded in under 5 minutes; your OOS Sharpe posts to the leaderboard automatically.',
@@ -141,6 +161,20 @@ const FORECAST: CompetitionSpec = {
     howToLoad:
       'The starter notebook pulls the real index history (e.g. via yfinance) so you can write and backtest predict(history) exactly the way it is scored.',
   },
+  scoreGuide: {
+    bands: [
+      { range: '< 0', meaning: 'Worse than a coin flip — your bets were backwards, or pure noise.' },
+      { range: '0 – 0.5', meaning: 'A marginal edge over random timing.' },
+      { range: '0.5 – 1.0', meaning: 'A real, persistent directional edge.' },
+      { range: '> 1.0', meaning: 'Excellent — rare for daily index timing.' },
+    ],
+    note: 'Daily index timing is brutally hard; even a small positive Sharpe is meaningful. Don’t be discouraged by scores near zero.',
+  },
+  checklist: [
+    '`predict(history)` returns a single float.',
+    'It only uses `history` — no future data, no network calls.',
+    'You backtested it walk-forward, not just fit it to the whole series.',
+  ],
   timeline: [
     'Always open — submit a model any time.',
     'Re-scored every day after the close on the latest real prices.',
@@ -201,6 +235,12 @@ MyAgent("your-handle", server="wss://…").run()`,
     howToLoad:
       'The starter notebook connects a baseline RemoteAgent to the live book so you can watch the state and build from a working quote.',
   },
+  // No fixed score table: PnL is session-relative — the goal is to stay positive against the field.
+  checklist: [
+    'Your agent handles ticks with no mid (return [] safely).',
+    'Orders respect any position / drawdown limits.',
+    '`on_tick` returns quickly — a slow tick simply doesn’t trade.',
+  ],
   timeline: [
     'Live whenever the season is active — connect any time.',
     'Your PnL appears on the rankings within a few ticks of connecting.',
