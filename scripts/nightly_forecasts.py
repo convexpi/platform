@@ -65,13 +65,22 @@ def call_anthropic(key: str, model: str) -> str:
     return "".join(b.get("text", "") for b in out.get("content", []))
 
 
-def call_openai(key: str, model: str) -> str:
+def _openai_chat(url: str, key: str, model: str) -> str:
+    """OpenAI-compatible /chat/completions (OpenAI, DeepSeek, and friends)."""
     out = _post_json(
-        "https://api.openai.com/v1/chat/completions",
+        url,
         {"model": model, "max_tokens": MAX_TOKENS, "messages": [{"role": "user", "content": PROMPT}]},
         {"Authorization": f"Bearer {key}"},
     )
     return out["choices"][0]["message"]["content"]
+
+
+def call_openai(key: str, model: str) -> str:
+    return _openai_chat("https://api.openai.com/v1/chat/completions", key, model)
+
+
+def call_deepseek(key: str, model: str) -> str:
+    return _openai_chat("https://api.deepseek.com/chat/completions", key, model)
 
 
 def call_gemini(key: str, model: str) -> str:
@@ -85,9 +94,10 @@ def call_gemini(key: str, model: str) -> str:
 
 # Each: (leaderboard name, key env, model env, default model, caller). A provider with no key is skipped.
 PROVIDERS = [
-    ("anthropic", "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL", "claude-opus-4-8", call_anthropic),
-    ("openai",    "OPENAI_API_KEY",    "OPENAI_MODEL",    "gpt-4o",          call_openai),
-    ("google",    "GEMINI_API_KEY",    "GEMINI_MODEL",    "gemini-2.0-flash", call_gemini),
+    ("anthropic", "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL", "claude-opus-4-8",  call_anthropic),
+    ("openai",    "OPENAI_API_KEY",    "OPENAI_MODEL",    "gpt-4o",           call_openai),
+    ("google",    "GEMINI_API_KEY",    "GEMINI_MODEL",    "gemini-2.5-flash", call_gemini),
+    ("deepseek",  "DEEPSEEK_API_KEY",  "DEEPSEEK_MODEL",  "deepseek-chat",    call_deepseek),
 ]
 
 
@@ -96,6 +106,41 @@ def extract_code(text: str) -> str | None:
     m = re.search(r"```(?:python)?\s*(.*?)```", text, re.S)
     code = (m.group(1) if m else text).strip()
     return code if "def predict" in code else None
+
+
+# Mirror the server's safety gate (lib/safety.ts) so we never run or submit dangerous code.
+BLOCKED = ("import os", "import sys", "import subprocess", "import socket", "import requests", "__import__")
+
+
+def blocked_pattern(code: str) -> str | None:
+    return next((p for p in BLOCKED if p in code), None)
+
+
+def validate_predict(code: str) -> tuple[bool, str]:
+    """Run the generated predict() against synthetic prices; confirm it returns a finite float.
+    Best-effort: if pandas/numpy aren't installed, skip (the grader still validates on submit)."""
+    try:
+        import numpy as np
+        import pandas as pd
+    except ImportError:
+        return True, "validation skipped (pandas/numpy unavailable)"
+    ns: dict = {}
+    try:
+        exec(code, ns)  # noqa: S102 — blocked-pattern-gated, ephemeral runner
+    except Exception as e:  # noqa: BLE001
+        return False, f"did not exec: {type(e).__name__}: {e}"
+    fn = ns.get("predict")
+    if not callable(fn):
+        return False, "no callable predict()"
+    rng = np.random.default_rng(0)
+    hist = pd.DataFrame({"close": 100 * np.cumprod(1 + rng.normal(0, 0.01, 300))})
+    try:
+        val = float(fn(hist))
+    except Exception as e:  # noqa: BLE001
+        return False, f"predict() failed: {type(e).__name__}: {e}"
+    if not np.isfinite(val):
+        return False, "predict() returned a non-finite value"
+    return True, "ok"
 
 
 def submit(base: str, api_key: str, name: str, code: str) -> dict:
@@ -132,8 +177,16 @@ def main() -> int:
             if not code:
                 print(f"✗ {name} ({model}): no valid predict() in response")
                 continue
+            bad = blocked_pattern(code)
+            if bad:
+                print(f"✗ {name} ({model}): blocked pattern '{bad}' — not running or submitting")
+                continue
+            valid, msg = validate_predict(code)
+            if not valid:
+                print(f"✗ {name} ({model}): {msg}")
+                continue
             if args.dry_run:
-                print(f"✓ {name} ({model}): produced predict() [{len(code)} chars] — dry run, not submitted")
+                print(f"✓ {name} ({model}): predict() runs [{len(code)} chars] — dry run, not submitted")
                 ok += 1
                 continue
             res = submit(base, api_key, label, code)
