@@ -12,7 +12,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -207,9 +206,9 @@ export function Nav() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-48">
                   {username && (
-                    <DropdownMenuLabel className="font-normal text-muted-foreground">
+                    <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">
                       @{username}
-                    </DropdownMenuLabel>
+                    </div>
                   )}
                   <DropdownMenuItem render={<Link href="/dashboard" />}>Dashboard</DropdownMenuItem>
                   {username && (
