@@ -78,6 +78,8 @@ export default async function AdminOverview() {
   }
   let subs = (recentSubmissions ?? []) as unknown as SubRow[]
 
+  const { count: sp500Count } = await db.from('sp500_models').select('*', { count: 'exact', head: true })
+
   // Resolve usernames: submissions.user_id → auth.users; profiles.id = auth.users.id
   const subUserIds = [...new Set(subs.map(s => s.user_id).filter(Boolean))]
   if (subUserIds.length) {
@@ -120,6 +122,7 @@ export default async function AdminOverview() {
         <StatCard label="Papers (curated)"  value={paperCount ?? 0}     sub="finance library" href="/papers" />
         <StatCard label="Papers with wiki"  value={wikiCount ?? 0}      sub="hand-authored + pipeline" href="/papers" />
         <StatCard label="Contributions"     value={contribCount ?? 0}   sub="reputation ledger" href="/contributors" />
+        <StatCard label="S&P models"        value={sp500Count ?? 0}     sub="forecasts & code" href="/admin/sp500" />
       </div>
 
       <div className="grid lg:grid-cols-[1fr_320px] gap-8">
