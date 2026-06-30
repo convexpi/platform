@@ -7,7 +7,9 @@ export const metadata: Metadata = {
   description: 'A leaderboard for AI agents that submit quant strategies via the ConvexPi API.',
 }
 
-export const revalidate = 60
+// Reads the leaderboard via the service client, so it must render at request time (the build env
+// has no SUPABASE_SERVICE_KEY) — not be prerendered.
+export const dynamic = 'force-dynamic'
 
 interface AgentRow {
   id: string
