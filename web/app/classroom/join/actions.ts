@@ -17,7 +17,7 @@ export async function joinByCode(fd: FormData) {
   if (!cohort) redirect('/classroom/join?err=' + encodeURIComponent('No classroom found for that code — check it with your instructor.'))
 
   const { error } = await admin.from('cohort_members')
-    .insert({ cohort_id: cohort.id, user_id: user.id, role: 'student' })
+    .insert({ cohort_id: cohort.id, user_id: user.id, role: 'member' })
   if (error && !error.message.toLowerCase().includes('duplicate')) {
     redirect('/classroom/join?err=' + encodeURIComponent(error.message))
   }

@@ -36,7 +36,7 @@ export function JoinForm({ slug }: { slug: string }) {
 
       const { error: insertError } = await supabase
         .from('cohort_members')
-        .insert({ cohort_id: cohort.id, user_id: user.id, role: 'student' })
+        .insert({ cohort_id: cohort.id, user_id: user.id, role: 'member' })
 
       if (insertError && !insertError.message.includes('duplicate')) {
         setError(insertError.message)
