@@ -191,7 +191,7 @@ export default async function CompetitionOverview({ params }: { params: Promise<
 
   const { data: topSubmissions } = await publicDb
     .from('submissions')
-    .select('strategy_name, user_id, profiles(username, display_name), grade_reports(oos_sharpe, overfitting_ratio)')
+    .select('strategy_name, user_id, grade_reports(oos_sharpe, overfitting_ratio)')
     .eq('cohort_id', cohort.id)
     .eq('status', 'completed')
     .order('submitted_at', { ascending: false })
@@ -202,14 +202,20 @@ export default async function CompetitionOverview({ params }: { params: Promise<
   type TopEntry = { username: string; strategyName: string; oosSharpe: number | null; overfitRatio: number | null }
   const byUser = new Map<string, TopEntry>()
   type GradeReport = { oos_sharpe: number | null; overfitting_ratio: number | null }
-  type Profile = { username: string | null; display_name: string | null }
   const firstOf = <T,>(e: T | T[] | null | undefined): T | null =>
     Array.isArray(e) ? (e[0] ?? null) : (e ?? null)
+
+  // profiles can't be embedded on submissions (no FK to profiles); resolve names separately.
+  const topUserIds = [...new Set((topSubmissions ?? []).map(r => r.user_id).filter(Boolean))]
+  const { data: topProfiles } = topUserIds.length
+    ? await publicDb.from('profiles').select('id, username, display_name').in('id', topUserIds)
+    : { data: [] as { id: string; username: string | null; display_name: string | null }[] }
+  const topProfileById = new Map((topProfiles ?? []).map(p => [p.id, p]))
 
   for (const row of topSubmissions ?? []) {
     const report = firstOf(row.grade_reports as GradeReport | GradeReport[] | null)
     if (!report) continue
-    const profile = firstOf(row.profiles as Profile | Profile[] | null)
+    const profile = topProfileById.get(row.user_id) ?? null
     const oosSharpe = report.oos_sharpe as number | null
     const existing = byUser.get(row.user_id)
     if (existing && (oosSharpe == null || (existing.oosSharpe != null && oosSharpe <= existing.oosSharpe))) continue

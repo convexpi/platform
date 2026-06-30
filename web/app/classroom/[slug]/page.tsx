@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -77,14 +78,23 @@ export default async function ClassroomOverview({ params }: { params: Promise<{ 
     }
   }
 
-  // Top 3 from grade_reports
-  const { data: topSubmissions } = await supabase
+  // Top 3 from grade_reports (read via service client: members should see the class board, and
+  // the page already gates access for private classrooms above).
+  const adminDb = createAdminClient()
+  const { data: topSubmissions } = await adminDb
     .from('submissions')
-    .select('strategy_name, user_id, profiles(username, display_name), grade_reports(oos_sharpe, overfitting_ratio)')
+    .select('strategy_name, user_id, grade_reports(oos_sharpe, overfitting_ratio)')
     .eq('cohort_id', cohort.id)
     .eq('status', 'completed')
     .order('submitted_at', { ascending: false })
     .limit(100)
+
+  // profiles can't be embedded on submissions (no FK to profiles); resolve names separately.
+  const topUserIds = [...new Set((topSubmissions ?? []).map(r => r.user_id).filter(Boolean))]
+  const { data: topProfiles } = topUserIds.length
+    ? await adminDb.from('profiles').select('id, username, display_name').in('id', topUserIds)
+    : { data: [] as { id: string; username: string | null; display_name: string | null }[] }
+  const topProfileById = new Map((topProfiles ?? []).map(p => [p.id, p]))
 
   type TopEntry = { username: string; strategyName: string; oosSharpe: number | null; overfitRatio: number | null }
   const byUser = new Map<string, TopEntry>()
@@ -92,8 +102,7 @@ export default async function ClassroomOverview({ params }: { params: Promise<{ 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const report = Array.isArray((row as any).grade_reports) ? (row as any).grade_reports[0] : (row as any).grade_reports
     if (!report) continue
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const profile = Array.isArray((row as any).profiles) ? (row as any).profiles[0] : (row as any).profiles
+    const profile = topProfileById.get(row.user_id) ?? null
     const oosSharpe = report.oos_sharpe as number | null
     const existing = byUser.get(row.user_id)
     if (existing && (oosSharpe == null || (existing.oosSharpe != null && oosSharpe <= existing.oosSharpe))) continue

@@ -24,11 +24,11 @@ export async function ActivityFeed({ followingIds }: { followingIds?: string[] }
     .from('submissions')
     .select(`
       id,
+      user_id,
       strategy_name,
       submitted_at,
       grade_reports(oos_sharpe),
-      cohorts!inner(name, slug, type, visibility),
-      profiles!inner(username, display_name, github_username)
+      cohorts!inner(name, slug, type, visibility)
     `)
     .eq('status', 'completed')
     .order('submitted_at', { ascending: false })
@@ -41,18 +41,25 @@ export async function ActivityFeed({ followingIds }: { followingIds?: string[] }
   const { data: submissions } = await query
 
   type Row = {
-    id: string; strategy_name: string; submitted_at: string
+    id: string; user_id: string; strategy_name: string; submitted_at: string
     grade_reports: { oos_sharpe: number | null }[] | { oos_sharpe: number | null } | null
     cohorts: { name: string; slug: string; type: string; visibility: string } | null
-    profiles: { username: string; display_name: string | null; github_username: string | null } | null
   }
 
   const rows = (submissions ?? []) as unknown as Row[]
+
+  // profiles can't be embedded on submissions (no FK to profiles); resolve names separately.
+  const userIds = [...new Set(rows.map(r => r.user_id).filter(Boolean))]
+  const { data: profileRows } = userIds.length
+    ? await supabase.from('profiles').select('id, username, display_name, github_username').in('id', userIds)
+    : { data: [] as { id: string; username: string; display_name: string | null; github_username: string | null }[] }
+  const profileById = new Map((profileRows ?? []).map(p => [p.id, p]))
 
   const activity: ActivityRow[] = rows
     .filter(r => r.cohorts?.visibility !== 'private')
     .map(r => {
       const gr = Array.isArray(r.grade_reports) ? r.grade_reports[0] : r.grade_reports
+      const p = profileById.get(r.user_id)
       return {
         id: r.id,
         strategy_name: r.strategy_name,
@@ -61,9 +68,9 @@ export async function ActivityFeed({ followingIds }: { followingIds?: string[] }
         cohort_name: r.cohorts?.name ?? null,
         cohort_slug: r.cohorts?.slug ?? null,
         cohort_type: r.cohorts?.type ?? null,
-        username: r.profiles?.username ?? null,
-        display_name: r.profiles?.display_name ?? null,
-        github_username: r.profiles?.github_username ?? null,
+        username: p?.username ?? null,
+        display_name: p?.display_name ?? null,
+        github_username: p?.github_username ?? null,
       }
     })
 
