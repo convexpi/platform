@@ -45,8 +45,8 @@ export default async function CompetitionOverview({ params }: { params: Promise<
   // ---------------------------------------------------------------------------
   if (slug === 'sp500-nextday') {
     const { data: models } = await supabase.from('sp500_models').select('id, name, user_id').eq('status', 'active')
-    const { data: scores } = await supabase.from('sp500_scores').select('model_id, hit_rate, cum_return, sharpe, n_days, last_date')
-    type Score = { model_id: string; hit_rate: number; cum_return: number; sharpe: number; n_days: number; last_date: string }
+    const { data: scores } = await supabase.from('sp500_scores').select('model_id, hit_rate, cum_return, sharpe, n_days, last_date, live_sharpe, live_days, live_cum_return')
+    type Score = { model_id: string; hit_rate: number; cum_return: number; sharpe: number; n_days: number; last_date: string; live_sharpe: number | null; live_days: number | null; live_cum_return: number | null }
     const sBy = new Map((scores ?? []).map((s) => [(s as Score).model_id, s as Score]))
     const uIds = [...new Set((models ?? []).map((m) => m.user_id).filter(Boolean))] as string[]
     const { data: profs } = uIds.length
@@ -58,7 +58,8 @@ export default async function CompetitionOverview({ params }: { params: Promise<
       return { id: m.id as string, name: m.name as string, mine: !!user && m.user_id === user.id,
                author: m.user_id ? (p?.display_name || (p?.username ? `@${p.username}` : 'someone')) : 'ConvexPi',
                s: sBy.get(m.id as string) }
-    }).sort((a, b) => (b.s?.sharpe ?? -Infinity) - (a.s?.sharpe ?? -Infinity))
+    }).sort((a, b) =>   // live track leads once it exists; backtest Sharpe breaks ties / orders new models
+      (b.s?.live_sharpe ?? -Infinity) - (a.s?.live_sharpe ?? -Infinity) || (b.s?.sharpe ?? -Infinity) - (a.s?.sharpe ?? -Infinity))
     const lastDate = (scores ?? [])[0] ? (scores as Score[]).map(s => s.last_date).sort().slice(-1)[0] : null
 
     const TEMPLATE = spec.submit.example
@@ -74,24 +75,34 @@ export default async function CompetitionOverview({ params }: { params: Promise<
             <table className="w-full text-sm">
               <thead><tr className="bg-secondary/50 text-xs text-muted-foreground">
                 <th className="text-left px-3 py-2">#</th><th className="text-left px-3 py-2">Model</th>
-                <th className="text-right px-3 py-2">Hit rate</th><th className="text-right px-3 py-2">Cum. PnL</th>
-                <th className="text-right px-3 py-2">Sharpe</th><th className="text-right px-3 py-2">Days</th>
+                <th className="text-right px-3 py-2">Live Sharpe</th><th className="text-right px-3 py-2">Live days</th>
+                <th className="text-right px-3 py-2">Backtest (252d)</th><th className="text-right px-3 py-2">Hit</th>
+                <th className="text-right px-3 py-2">Cum. PnL</th>
               </tr></thead>
               <tbody className="divide-y divide-border">
-                {rows.map((r, i) => (
+                {rows.map((r, i) => {
+                  const liveSharpe = r.s?.live_sharpe
+                  const liveDays = r.s?.live_days ?? 0
+                  return (
                   <tr key={r.id} className={r.mine ? 'bg-[#C9A34E]/5' : ''}>
                     <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                     <td className="px-3 py-2"><span className="font-medium text-foreground">{r.name}</span> <span className="text-xs text-muted-foreground">{r.author}</span></td>
+                    <td className={`px-3 py-2 text-right font-mono font-semibold ${liveSharpe == null ? 'text-muted-foreground' : liveSharpe >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{liveSharpe == null ? '—' : liveSharpe.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-muted-foreground">{liveDays}</td>
+                    <td className={`px-3 py-2 text-right font-mono ${(r.s?.sharpe ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{r.s ? r.s.sharpe.toFixed(2) : '—'}</td>
                     <td className="px-3 py-2 text-right font-mono">{r.s ? `${(r.s.hit_rate * 100).toFixed(0)}%` : '—'}</td>
                     <td className={`px-3 py-2 text-right font-mono ${(r.s?.cum_return ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{r.s ? `${(r.s.cum_return * 100).toFixed(1)}%` : '—'}</td>
-                    <td className={`px-3 py-2 text-right font-mono font-semibold ${(r.s?.sharpe ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{r.s ? r.s.sharpe.toFixed(2) : '—'}</td>
-                    <td className="px-3 py-2 text-right font-mono text-muted-foreground">{r.s?.n_days ?? '—'}</td>
                   </tr>
-                ))}
-                {rows.length === 0 && <tr><td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">No models yet.</td></tr>}
+                  )
+                })}
+                {rows.length === 0 && <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">No models yet.</td></tr>}
               </tbody>
             </table>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            <span className="text-foreground">Live</span> = forward-only track since each model went active (the honest score; it grows daily).{' '}
+            <span className="text-foreground">Backtest</span> = a rolling 252-day walk-forward over real prices, recomputed daily — a baseline that’s comparable from day one.
+          </p>
         </SpecSection>
 
         <CanonicalSpecSections spec={spec} dataSummary={dataSummary} />

@@ -127,7 +127,7 @@ const FORECAST: CompetitionSpec = {
   kind: 'Forecast',
   kindLabel: 'Live forecast',
   facts: [
-    { label: 'Metric', value: 'Sharpe of directional bets' },
+    { label: 'Metric', value: 'Live Sharpe (+ 252d backtest)' },
     { label: 'Data', value: 'Real S&P 500 closes' },
     { label: 'Cadence', value: 'Re-scored daily on live prices' },
     { label: 'Level', value: 'Beginner' },
@@ -146,19 +146,19 @@ const FORECAST: CompetitionSpec = {
     note: 'Must define predict(history) -> float. Runs sandboxed; scored on the next daily run.',
   },
   scoring: {
-    metric: 'Sharpe ratio of your forecast-sign bets',
+    metric: 'Live (forward-only) Sharpe — with a 252-day backtest baseline',
     definition: [
-      'Each day, the sign of your forecast sets your position (+1 long / −1 short).',
-      'Daily PnL = your position × the index’s actual next-day return.',
-      'Scored walk-forward on real closes and re-scored daily as new sessions arrive.',
-      'Ranked by the annualised Sharpe of those daily PnLs; hit rate and cumulative PnL are also shown.',
+      'Each day, the sign of your forecast sets your position (+1 long / −1 short); daily PnL = position × the index’s actual next-day return.',
+      'Your live track scores only sessions after your model went active — a genuine forward record that starts at zero days and grows. This is the headline rank.',
+      'A rolling 252-day walk-forward backtest over real prices is shown alongside as a baseline that’s comparable from day one (predict() only ever sees history up to each day).',
+      'Both report the annualised Sharpe of the daily PnLs; hit rate and cumulative PnL too.',
     ],
-    publicLabel: 'Your backtest (the “public” score)',
+    publicLabel: 'The backtest (baseline)',
     public:
-      'However well your function looks on past data — you can’t be ranked on that, because the past is overfittable.',
-    privateLabel: 'Live forward score (the “private” score)',
+      'A rolling 252-day walk-forward over real prices — comparable immediately, but it replays the past, so it’s a baseline, not proof of forward skill.',
+    privateLabel: 'The live track (your rank)',
     private:
-      'You are scored purely on prices that did not exist when you submitted. There is no in-sample to game — it is all out-of-sample.',
+      'Forward-only: scored only on sessions that didn’t exist when your model went active. It starts at zero days and accumulates — the honest measure.',
   },
   data: {
     summary:
