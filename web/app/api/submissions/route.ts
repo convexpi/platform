@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveRequestUser, hasScope } from '@/lib/api-auth'
-import { validateSubmission } from '@/lib/safety'
+import { validateForLanguage } from '@/lib/safety'
 import { submissionLimiter } from '@/lib/rate-limit'
 
 const MAX_CODE_BYTES = 50_000   // 50 KB — generous for any real strategy
@@ -24,12 +24,17 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}))
   const { cohortId, slug, strategyName, code, githubUrl } = body
+  const language = String(body.language ?? 'python').toLowerCase()
 
   if ((!cohortId && !slug) || !strategyName || !code) {
     return NextResponse.json(
       { error: 'Missing required fields: (cohortId or slug), strategyName, code' },
       { status: 400 },
     )
+  }
+
+  if (!['python', 'r', 'julia'].includes(language)) {
+    return NextResponse.json({ error: `Unsupported language: ${language} (python | r | julia).` }, { status: 400 })
   }
 
   if (Buffer.byteLength(code, 'utf8') > MAX_CODE_BYTES) {
@@ -39,7 +44,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const validation = validateSubmission(code)
+  const validation = validateForLanguage(code, language)
   if (!validation.ok) {
     return NextResponse.json({ error: validation.error }, { status: 400 })
   }
@@ -88,6 +93,7 @@ export async function POST(request: Request) {
       user_id: actor.userId,
       strategy_name: strategyName,
       code,
+      language,
       submitted_via: actor.via,
       ...(actor.via === 'agent' ? { agent_name: actor.key?.name } : {}),
       ...(githubUrl ? { github_url: githubUrl } : {}),
