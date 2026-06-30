@@ -29,6 +29,7 @@ interface SubmissionRow {
   strategy_name: string
   submitted_at: string
   github_url: string | null
+  language: string | null
   grade_reports: EmbeddedGradeReport | EmbeddedGradeReport[] | null
 }
 
@@ -52,9 +53,10 @@ interface LeaderboardEntry {
   alphasFound: string | null
   submittedAt: string
   forwardSharpe: number | null
+  language: string | null
 }
 
-const BASELINES: (Omit<LeaderboardEntry, 'submissionId' | 'forwardSharpe'>)[] = [
+const BASELINES: (Omit<LeaderboardEntry, 'submissionId' | 'forwardSharpe' | 'language'>)[] = [
   { userId: '__eq',    username: '— Baseline —', usernameSlug: null, githubUrl: null, strategyName: 'Equal Weight',    oosSharpe:  0.10, overfitRatio:  1.00, maxDd: -12.4, turnover:  0.7, alphasFound: null, submittedAt: '' },
   { userId: '__mom',   username: '— Baseline —', usernameSlug: null, githubUrl: null, strategyName: 'Naive Momentum',  oosSharpe: -0.05, overfitRatio: -0.17, maxDd: -28.1, turnover: 11.2, alphasFound: null, submittedAt: '' },
   { userId: '__noise', username: '— Baseline —', usernameSlug: null, githubUrl: null, strategyName: 'Random Noise',    oosSharpe: -0.80, overfitRatio: -0.84, maxDd: -61.3, turnover: 45.0, alphasFound: null, submittedAt: '' },
@@ -87,7 +89,7 @@ export async function LabLeaderboard({ cohortId, cohortSlug, cohortType = 'compe
 
   const { data } = await supabase
     .from('submissions')
-    .select('id, user_id, strategy_name, submitted_at, github_url, grade_reports(oos_sharpe, is_sharpe, overfitting_ratio, oos_max_dd, oos_turnover, alphas_discovered, total_alphas)')
+    .select('id, user_id, strategy_name, submitted_at, github_url, language, grade_reports(oos_sharpe, is_sharpe, overfitting_ratio, oos_max_dd, oos_turnover, alphas_discovered, total_alphas)')
     .eq('cohort_id', cohortId)
     .eq('status', 'completed')
     .order('submitted_at', { ascending: false })
@@ -128,6 +130,7 @@ export async function LabLeaderboard({ cohortId, cohortSlug, cohortType = 'compe
           : null,
       submittedAt: row.submitted_at,
       forwardSharpe: null,
+      language: row.language ?? 'python',
     })
   }
 
@@ -202,6 +205,9 @@ export async function LabLeaderboard({ cohortId, cohortSlug, cohortType = 'compe
                 <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">
                   <span className="flex items-center gap-2">
                     {e.strategyName}
+                    {e.language && e.language !== 'python' && (
+                      <Badge variant="outline" className="text-[10px] uppercase">{e.language}</Badge>
+                    )}
                     {e.githubUrl && (
                       <a href={e.githubUrl} target="_blank" rel="noopener noreferrer"
                         title="View code on GitHub"
