@@ -9,6 +9,7 @@ type Model = { id: string; user_id: string | null; name: string; code: string; s
 type Score = {
   model_id: string; sharpe: number | null; hit_rate: number | null; cum_return: number | null
   n_days: number | null; last_date: string | null; last_forecast: number | null; last_forecast_as_of: string | null
+  live_sharpe: number | null; live_days: number | null; live_cum_return: number | null
 }
 type Profile = { id: string; username: string | null; display_name: string | null }
 
@@ -20,7 +21,7 @@ export default async function AdminSp500() {
   const db = createAdminClient()
   const [{ data: models }, { data: scores }] = await Promise.all([
     db.from('sp500_models').select('id, user_id, name, code, status, created_at'),
-    db.from('sp500_scores').select('model_id, sharpe, hit_rate, cum_return, n_days, last_date, last_forecast, last_forecast_as_of'),
+    db.from('sp500_scores').select('model_id, sharpe, hit_rate, cum_return, n_days, last_date, last_forecast, last_forecast_as_of, live_sharpe, live_days, live_cum_return'),
   ])
 
   const scoreBy = new Map((scores ?? []).map((s) => [(s as Score).model_id, s as Score]))
@@ -36,7 +37,8 @@ export default async function AdminSp500() {
       s: scoreBy.get(m.id) ?? null,
       author: m.user_id ? (profBy.get(m.user_id)?.display_name || (profBy.get(m.user_id)?.username ? `@${profBy.get(m.user_id)!.username}` : m.user_id.slice(0, 8))) : 'House',
     }))
-    .sort((a, b) => (b.s?.sharpe ?? -Infinity) - (a.s?.sharpe ?? -Infinity))
+    .sort((a, b) =>
+      (b.s?.live_sharpe ?? -Infinity) - (a.s?.live_sharpe ?? -Infinity) || (b.s?.sharpe ?? -Infinity) - (a.s?.sharpe ?? -Infinity))
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -56,7 +58,9 @@ export default async function AdminSp500() {
               <th className="text-left px-3 py-2 font-medium">Model</th>
               <th className="text-left px-3 py-2 font-medium">Author</th>
               <th className="text-left px-3 py-2 font-medium">Next call</th>
-              <th className="text-right px-3 py-2 font-medium">Sharpe</th>
+              <th className="text-right px-3 py-2 font-medium">Live Sharpe</th>
+              <th className="text-right px-3 py-2 font-medium">Live days</th>
+              <th className="text-right px-3 py-2 font-medium">Backtest</th>
               <th className="text-right px-3 py-2 font-medium">Hit</th>
               <th className="text-right px-3 py-2 font-medium">Cum PnL</th>
               <th className="text-right px-3 py-2 font-medium">Days</th>
@@ -88,6 +92,8 @@ export default async function AdminSp500() {
                       </span>
                     )}
                   </td>
+                  <td className={`px-3 py-2 text-right font-mono font-semibold ${s?.live_sharpe == null ? 'text-muted-foreground' : s.live_sharpe >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{s?.live_sharpe != null ? s.live_sharpe.toFixed(2) : '—'}</td>
+                  <td className="px-3 py-2 text-right font-mono text-muted-foreground">{s?.live_days ?? 0}</td>
                   <td className={`px-3 py-2 text-right font-mono ${(s?.sharpe ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{s?.sharpe != null ? s.sharpe.toFixed(2) : '—'}</td>
                   <td className="px-3 py-2 text-right font-mono">{pct(s?.hit_rate, 0)}</td>
                   <td className={`px-3 py-2 text-right font-mono ${(s?.cum_return ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{pct(s?.cum_return, 1)}</td>
@@ -96,7 +102,7 @@ export default async function AdminSp500() {
                 </tr>
               )
             })}
-            {rows.length === 0 && <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">No models yet.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={10} className="px-3 py-10 text-center text-muted-foreground">No models yet.</td></tr>}
           </tbody>
         </table>
       </div>
