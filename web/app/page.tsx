@@ -85,7 +85,7 @@ export default async function Home() {
               <blockquote className="border-l-2 border-[#C9A34E] pl-4 text-muted-foreground italic text-base">
                 Reality is the final test set.
               </blockquote>
-              <div className="flex items-center gap-3 pt-1">
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <Link href="/getting-started">
                   <Button size="lg"
                     className="bg-[#0B1F3A] hover:bg-[#0B1F3A]/90 text-white font-medium px-6">
@@ -96,6 +96,12 @@ export default async function Home() {
                   <Button size="lg" variant="outline"
                     className="border-border font-medium px-6">
                     Run the playground
+                  </Button>
+                </Link>
+                <Link href="/compete">
+                  <Button size="lg" variant="outline"
+                    className="border-border font-medium px-6">
+                    See the competitions
                   </Button>
                 </Link>
               </div>
