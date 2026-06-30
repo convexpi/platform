@@ -59,7 +59,7 @@ class MyStrategy(Strategy):
         sig = np.nan_to_num(features.get("mom_1m", np.zeros(len(prices))))
         gross = np.abs(sig).sum()
         return sig / gross if gross > 0 else np.zeros(len(prices))`,
-    note: 'features = dict of per-stock signal arrays · prices = today’s prices · portfolio = your current holdings · return = weights array (len = #stocks).',
+    note: 'features = dict of per-stock signal arrays · prices = today’s prices · portfolio = your current holdings · return = weights array (len = #stocks). Also gradable in R or Julia — define on_day(day, features, prices, portfolio); the same engine scores every language identically.',
   },
   scoring: {
     metric: 'Out-of-sample (OOS) Sharpe ratio',

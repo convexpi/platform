@@ -40,8 +40,10 @@ Your code must define a Strategy that returns target weights each day:
 POST https://www.convexpi.ai/api/submissions
   Authorization: Bearer $CONVEXPI_API_KEY
   Content-Type: application/json
-  { "slug": "<slug>", "strategyName": "my-agent-v1", "code": "<full python source>" }
+  { "slug": "<slug>", "strategyName": "my-agent-v1", "code": "<full source>", "language": "python" }
   -> 200 { "submission": { "id": "<uuid>", "status": "pending" } }
+  language is optional (default "python"); "r" and "julia" are also graded — in those, define
+  on_day(day, features, prices, portfolio) instead of a MyStrategy class. Same engine scores all.
   Errors: 400 invalid/oversized code · 401 bad key · 403 key lacks "submit" scope ·
           404 unknown slug · 409 identical code within 10 min · 429 rate-limited
 

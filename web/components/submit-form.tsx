@@ -41,6 +41,30 @@ class MyStrategy(Strategy):
         return weights / total if total > 0 else weights
 `
 
+const STARTER_R = `# Define on_day; return target weights (one per stock). The grader runs this natively in R.
+on_day <- function(day, features, prices, portfolio) {
+  sig <- features[["mom_1m"]]      # a cross-sectional z-score; features is a named list
+  sig[!is.finite(sig)] <- 0
+  s <- sum(abs(sig))
+  if (s > 0) sig / s else sig      # long winners / short losers, gross leverage 1
+}`
+
+const STARTER_JULIA = `# Define on_day; return target weights (one per stock). The grader runs this natively in Julia.
+function on_day(day, features, prices, portfolio)
+    sig = copy(features["mom_1m"])   # a cross-sectional z-score; features is a Dict
+    sig[.!isfinite.(sig)] .= 0.0
+    s = sum(abs.(sig))
+    return s > 0 ? sig ./ s : sig    # long winners / short losers, gross leverage 1
+end`
+
+const STARTERS: Record<string, string> = { python: STARTER_CODE, r: STARTER_R, julia: STARTER_JULIA }
+const MONACO_LANG: Record<string, string> = { python: 'python', r: 'r', julia: 'julia' }
+const LANGUAGES = [
+  { id: 'python', label: 'Python' },
+  { id: 'r', label: 'R' },
+  { id: 'julia', label: 'Julia' },
+]
+
 interface SubmitFormProps {
   cohortId: string
   cohortSlug: string
@@ -50,6 +74,7 @@ interface SubmitFormProps {
 
 export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }: SubmitFormProps) {
   const [code, setCode] = useState(STARTER_CODE)
+  const [language, setLanguage] = useState('python')
   const [strategyName, setStrategyName] = useState('')
   const [githubUrl, setGithubUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -58,11 +83,18 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
   const [audit, setAudit] = useState<AuditResult | null>(null)
   const supabase = createClient()
 
-  // Rerun audit 600ms after the user stops typing
+  // Rerun audit 600ms after the user stops typing (Python-only — the auditor parses Python).
   useEffect(() => {
+    if (language !== 'python') { setAudit(null); return }
     const id = setTimeout(() => setAudit(auditStrategy(code)), 600)
     return () => clearTimeout(id)
-  }, [code])
+  }, [code, language])
+
+  // Swap the starter when the language changes (only if the editor still holds a starter).
+  function changeLanguage(lang: string) {
+    setLanguage(lang)
+    if (Object.values(STARTERS).includes(code)) setCode(STARTERS[lang])
+  }
 
   // Poll for grade results after submission
   useEffect(() => {
@@ -92,7 +124,7 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
     const res = await fetch('/api/submissions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cohortId, strategyName, code, githubUrl: githubUrl.trim() || null }),
+      body: JSON.stringify({ cohortId, strategyName, code, language, githubUrl: githubUrl.trim() || null }),
     })
 
     const body = await res.json()
@@ -136,16 +168,34 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label>Strategy code</Label>
+          <div className="flex items-center justify-between gap-3">
+            <Label>Strategy code</Label>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">Language</span>
+              <select
+                value={language}
+                onChange={e => changeLanguage(e.target.value)}
+                className="text-sm border rounded-md px-2 py-1 bg-background"
+                aria-label="Strategy language"
+              >
+                {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+              </select>
+            </div>
+          </div>
           <p className="text-xs text-muted-foreground">
-            Subclass <code className="bg-muted px-1 rounded">Strategy</code> and implement{' '}
-            <code className="bg-muted px-1 rounded">on_day</code>. Your class must be named{' '}
-            <code className="bg-muted px-1 rounded">MyStrategy</code>.
+            {language === 'python' ? (
+              <>Subclass <code className="bg-muted px-1 rounded">Strategy</code> and implement{' '}
+                <code className="bg-muted px-1 rounded">on_day</code>; your class must be named{' '}
+                <code className="bg-muted px-1 rounded">MyStrategy</code>.</>
+            ) : (
+              <>Define <code className="bg-muted px-1 rounded">on_day(day, features, prices, portfolio)</code>{' '}
+                returning target weights. Graded by the same engine as Python — same idea, same OOS score.</>
+            )}
           </p>
           <div className="border rounded-lg overflow-hidden">
             <MonacoEditor
               height="400px"
-              language="python"
+              language={MONACO_LANG[language]}
               value={code}
               onChange={v => setCode(v ?? '')}
               theme="vs-dark"
