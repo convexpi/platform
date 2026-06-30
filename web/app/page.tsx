@@ -470,7 +470,7 @@ export default async function Home() {
                 title: 'Alpha Discovery Lab',
                 desc: 'Write strategies against a synthetic equity panel with planted factor signals. Nine structured missions take you from naive overfitting to disciplined out-of-sample evaluation, with electives on microstructure and trading costs.',
                 bullets: [
-                  'Python-native (pandas, numpy, scikit-learn)',
+                  'Write in Python, R, or Julia — same engine scores all',
                   'IS / OOS breakdown on every submission',
                   'Hidden-holdout grading you cannot game',
                 ],
