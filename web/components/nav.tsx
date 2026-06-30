@@ -12,6 +12,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { NotificationBell } from '@/components/notification-bell'
@@ -191,19 +193,37 @@ export function Nav() {
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm">Dashboard</Button>
               </Link>
-              {username && (
-                <Link href={`/profile/${username}`} title={`Profile: @${username}`}>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  aria-label="Account menu"
+                  className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
                   <Avatar
-                    username={username}
+                    username={username ?? githubUsername ?? 'account'}
                     githubUsername={githubUsername}
                     size={28}
                     className="hover:ring-2 hover:ring-primary/40 transition-all"
                   />
-                </Link>
-              )}
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                Sign out
-              </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-48">
+                  {username && (
+                    <DropdownMenuLabel className="font-normal text-muted-foreground">
+                      @{username}
+                    </DropdownMenuLabel>
+                  )}
+                  <DropdownMenuItem render={<Link href="/dashboard" />}>Dashboard</DropdownMenuItem>
+                  {username && (
+                    <DropdownMenuItem render={<Link href={`/profile/${username}`} />}>
+                      My profile
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem render={<Link href="/settings/api-keys" />}>
+                    API keys
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>
@@ -274,6 +294,9 @@ export function Nav() {
                         <Button variant="ghost" className="w-full">My profile</Button>
                       </Link>
                     )}
+                    <Link href="/settings/api-keys" onClick={() => setMobileOpen(false)}>
+                      <Button variant="ghost" className="w-full">API keys</Button>
+                    </Link>
                     <Button
                       variant="ghost"
                       className="w-full"
