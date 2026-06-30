@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -179,13 +180,16 @@ export default async function CompetitionOverview({ params }: { params: Promise<
   // ---------------------------------------------------------------------------
   // Lab — submit a strategy, graded on a hidden synthetic market
   // ---------------------------------------------------------------------------
-  const { count: participantCount } = await supabase
+  // Public standings: read via the service client (RLS on submissions restricts reads to
+  // owner/members, which would otherwise blank the board for an open competition).
+  const publicDb = createAdminClient()
+  const { count: participantCount } = await publicDb
     .from('submissions')
     .select('user_id', { count: 'exact', head: true })
     .eq('cohort_id', cohort.id)
     .eq('status', 'completed')
 
-  const { data: topSubmissions } = await supabase
+  const { data: topSubmissions } = await publicDb
     .from('submissions')
     .select('strategy_name, user_id, profiles(username, display_name), grade_reports(oos_sharpe, overfitting_ratio)')
     .eq('cohort_id', cohort.id)

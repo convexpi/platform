@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
 
 interface LabLeaderboardProps {
@@ -85,7 +85,11 @@ function OverfitBadge({ v }: { v: number | null }) {
 }
 
 export async function LabLeaderboard({ cohortId, cohortSlug, cohortType = 'competition' }: LabLeaderboardProps) {
-  const supabase = await createClient()
+  // Leaderboards are public rankings. Read via the service client so they render the full field —
+  // RLS on submissions restricts reads to the owner / cohort members, which would otherwise leave
+  // an open competition's board empty for everyone. (Pages embedding a private classroom's board
+  // gate membership themselves.)
+  const supabase = createAdminClient()
 
   const { data } = await supabase
     .from('submissions')
