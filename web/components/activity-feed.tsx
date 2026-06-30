@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Avatar } from '@/components/avatar'
 
 type ActivityRow = {
@@ -16,7 +16,9 @@ type ActivityRow = {
 }
 
 export async function ActivityFeed({ followingIds }: { followingIds?: string[] }) {
-  const supabase = await createClient()
+  // Public activity feed — read via the service client (RLS would otherwise hide submissions from
+  // non-members); private cohorts are filtered out below.
+  const supabase = createAdminClient()
 
   let query = supabase
     .from('submissions')
