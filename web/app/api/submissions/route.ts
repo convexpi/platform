@@ -97,5 +97,16 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Auto-enroll competitors so the competition shows on their dashboard (and they get member-level
+  // read access to its board). Competitions only — classroom membership is managed explicitly.
+  const { data: cohortMeta } = await db.from('cohorts').select('type').eq('id', resolvedCohortId!).maybeSingle()
+  if (cohortMeta?.type === 'competition') {
+    const { data: member } = await db.from('cohort_members')
+      .select('id').eq('cohort_id', resolvedCohortId!).eq('user_id', actor.userId).maybeSingle()
+    if (!member) {
+      await db.from('cohort_members').insert({ cohort_id: resolvedCohortId, user_id: actor.userId, role: 'member' })
+    }
+  }
+
   return NextResponse.json({ submission })
 }
