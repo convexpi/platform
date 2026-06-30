@@ -29,7 +29,6 @@ interface SubmissionRow {
   strategy_name: string
   submitted_at: string
   github_url: string | null
-  profiles: EmbeddedProfile | EmbeddedProfile[] | null
   grade_reports: EmbeddedGradeReport | EmbeddedGradeReport[] | null
 }
 
@@ -61,11 +60,6 @@ const BASELINES: (Omit<LeaderboardEntry, 'submissionId' | 'forwardSharpe'>)[] = 
   { userId: '__noise', username: '— Baseline —', usernameSlug: null, githubUrl: null, strategyName: 'Random Noise',    oosSharpe: -0.80, overfitRatio: -0.84, maxDd: -61.3, turnover: 45.0, alphasFound: null, submittedAt: '' },
 ]
 
-function oneProfile(v: EmbeddedProfile | EmbeddedProfile[] | null): EmbeddedProfile | null {
-  if (!v) return null
-  return Array.isArray(v) ? (v[0] ?? null) : v
-}
-
 function oneReport(v: EmbeddedGradeReport | EmbeddedGradeReport[] | null): EmbeddedGradeReport | null {
   if (!v) return null
   return Array.isArray(v) ? (v[0] ?? null) : v
@@ -93,20 +87,30 @@ export async function LabLeaderboard({ cohortId, cohortSlug, cohortType = 'compe
 
   const { data } = await supabase
     .from('submissions')
-    .select('id, user_id, strategy_name, submitted_at, github_url, profiles(username, display_name), grade_reports(oos_sharpe, is_sharpe, overfitting_ratio, oos_max_dd, oos_turnover, alphas_discovered, total_alphas)')
+    .select('id, user_id, strategy_name, submitted_at, github_url, grade_reports(oos_sharpe, is_sharpe, overfitting_ratio, oos_max_dd, oos_turnover, alphas_discovered, total_alphas)')
     .eq('cohort_id', cohortId)
     .eq('status', 'completed')
     .order('submitted_at', { ascending: false })
 
+  const subRows = (data ?? []) as SubmissionRow[]
+
+  // profiles can't be embedded on submissions (submissions.user_id → auth.users, not profiles —
+  // no FK PostgREST can follow), so resolve display names in a separate query.
+  const userIds = [...new Set(subRows.map(r => r.user_id).filter(Boolean))]
+  const { data: profileRows } = userIds.length
+    ? await supabase.from('profiles').select('id, username, display_name').in('id', userIds)
+    : { data: [] as { id: string; username: string; display_name: string | null }[] }
+  const profileById = new Map((profileRows ?? []).map(p => [p.id, p as EmbeddedProfile & { id: string }]))
+
   // Best OOS Sharpe per user — track submission ID for forward score lookup
   const byUser = new Map<string, LeaderboardEntry>()
-  for (const row of (data ?? []) as SubmissionRow[]) {
+  for (const row of subRows) {
     const report = oneReport(row.grade_reports)
     if (!report) continue
     const existing = byUser.get(row.user_id)
     const sharpe = report.oos_sharpe
     if (existing != null && (sharpe == null || (existing.oosSharpe != null && sharpe <= existing.oosSharpe))) continue
-    const profile = oneProfile(row.profiles)
+    const profile = profileById.get(row.user_id) ?? null
     byUser.set(row.user_id, {
       submissionId: row.id,
       userId: row.user_id,
