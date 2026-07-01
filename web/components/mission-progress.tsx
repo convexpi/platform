@@ -19,6 +19,7 @@ const MISSIONS = [
     title: 'The Limit-Order Book',
     desc: 'Inventory risk, adverse selection, PnL attribution',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_02_marketmaker/notebook.ipynb',
+    langs: ['r', 'julia'] as const,
   },
   {
     id: 'mission_03_alpha_discovery',
@@ -50,6 +51,7 @@ const MISSIONS = [
     title: 'Advanced Agents',
     desc: 'RL execution, market impact, end-to-end strategy',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_06_advanced_agents/notebook.ipynb',
+    langs: ['r', 'julia'] as const,
   },
   {
     id: 'mission_07_queue_dynamics',
@@ -57,6 +59,7 @@ const MISSIONS = [
     title: 'Queue Dynamics (L3) · elective',
     desc: 'Queue position, latency, the cancel race',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_07_queue_dynamics/notebook.ipynb',
+    langs: ['r', 'julia'] as const,
   },
   {
     id: 'mission_08_cost_of_trading',

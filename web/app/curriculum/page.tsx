@@ -67,6 +67,7 @@ const MISSIONS: Mission[] = [
     subtitle: 'Market microstructure and adversarial trading',
     duration: '60–90 min',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_02_marketmaker/notebook.ipynb',
+    langs: ['r', 'julia'],
     objectives: [
       'Describe how a limit-order book operates',
       'Implement a simple market-making agent',
@@ -165,6 +166,7 @@ const MISSIONS: Mission[] = [
     subtitle: 'Reinforcement learning meets market microstructure',
     duration: '2–3 hours',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_06_advanced_agents/notebook.ipynb',
+    langs: ['r', 'julia'],
     objectives: [
       'Implement a basic RL agent for order execution',
       'Measure and minimise market impact',
@@ -192,6 +194,7 @@ const ELECTIVES: Mission[] = [
     subtitle: 'Trading the realistic exchange (L3)',
     duration: '60–90 min',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_07_queue_dynamics/notebook.ipynb',
+    langs: ['r', 'julia'],
     objectives: [
       'Explain FIFO queue priority and why queue position is the maker’s core asset',
       'Simulate a resting limit order order-by-order: drain the queue, then fill',
