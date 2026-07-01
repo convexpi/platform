@@ -6,6 +6,34 @@ import { submissionLimiter } from '@/lib/rate-limit'
 
 const MAX_CODE_BYTES = 50_000   // 50 KB — generous for any real strategy
 
+// List the caller's own submissions (newest first). Optional ?slug= filters to one competition.
+// Owner-only (cookie session or API key) — you only ever see your own rows.
+export async function GET(request: Request) {
+  const actor = await resolveRequestUser(request)
+  if (!actor) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const slug = new URL(request.url).searchParams.get('slug')
+  const db = createAdminClient()
+  let cohortId: string | null = null
+  if (slug) {
+    const { data: cohort } = await db.from('cohorts').select('id').eq('slug', slug).maybeSingle()
+    if (!cohort) return NextResponse.json({ submissions: [] })
+    cohortId = cohort.id
+  }
+
+  let q = db
+    .from('submissions')
+    .select('id, strategy_name, language, status, submitted_at, submitted_via, cohort_id')
+    .eq('user_id', actor.userId)
+    .order('submitted_at', { ascending: false })
+    .limit(200)
+  if (cohortId) q = q.eq('cohort_id', cohortId)
+
+  const { data, error } = await q
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ submissions: data ?? [] })
+}
+
 export async function POST(request: Request) {
   // Accepts either a browser cookie session or an `Authorization: Bearer cpk_…`
   // API key. Same validation / dedup / rate-limit / insert for every path, so
