@@ -141,6 +141,7 @@ const MISSIONS: Mission[] = [
     subtitle: 'From synthetic markets to live equity panels',
     duration: '90–120 min',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_05_real_data/notebook.ipynb',
+    langs: ['r', 'julia'],
     objectives: [
       'Fetch and clean a real equity panel using yfinance',
       'Identify data quality issues (survivorship bias, stale prices)',

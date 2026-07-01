@@ -104,8 +104,10 @@ describe('Nav', () => {
       return { data: { subscription: { unsubscribe: vi.fn() } } }
     }) as any)
     render(<Nav />)
-    // Auth state updated via onAuthStateChange callback
-    expect(screen.getAllByText(/Sign out/i).length).toBeGreaterThan(0)
+    // Sign out now lives in the account menu (desktop avatar) and the mobile drawer.
+    // Open the drawer to assert the authenticated sign-out affordance is reachable.
+    fireEvent.click(screen.getByRole('button', { name: /Open menu/i }))
+    expect(await screen.findByText(/Sign out/i)).toBeInTheDocument()
   })
 
   it('highlights the active nav group', () => {
