@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils'
 const DEMO_SLUG = 'demo-fall-2026'
 const COLAB_URL =
   'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_01_overfitting/notebook.ipynb'
+const COLAB_URL_R = COLAB_URL.replace('/notebook.ipynb', '/notebook_r.ipynb')
+const COLAB_URL_JULIA = COLAB_URL.replace('/notebook.ipynb', '/notebook_julia.ipynb')
 
 function Step({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return (
@@ -76,9 +78,18 @@ export default function GettingStarted() {
           >
             Open Mission 1 in Colab
           </a>
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
+            Prefer another language? Same mission, scored by the same engine:{' '}
+            <a href={COLAB_URL_R} target="_blank" rel="noopener noreferrer"
+              className="underline underline-offset-4 hover:text-foreground">R</a>
+            {' · '}
+            <a href={COLAB_URL_JULIA} target="_blank" rel="noopener noreferrer"
+              className="underline underline-offset-4 hover:text-foreground">Julia</a>
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
             No local setup needed. Colab runs in your browser.{' '}
-            <code className="bg-muted px-1 rounded">pip install convexpi-lab</code> is the only install.
+            <code className="bg-muted px-1 rounded">pip install convexpi-lab</code> (or the{' '}
+            <code className="bg-muted px-1 rounded">convexpi</code> R / Julia package) is the only install.
           </p>
         </Step>
 
