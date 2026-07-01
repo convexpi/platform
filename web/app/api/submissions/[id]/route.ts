@@ -33,3 +33,25 @@ export async function GET(
     report: report ?? null,
   })
 }
+
+// Delete one of your own submissions (and its grade report). Owner-only (cookie or API key) — handy
+// for clearing test submissions off a leaderboard.
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params
+  const actor = await resolveRequestUser(request)
+  if (!actor) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const db = createAdminClient()
+  // Verify ownership before deleting anything.
+  const { data: sub } = await db
+    .from('submissions').select('id').eq('id', id).eq('user_id', actor.userId).maybeSingle()
+  if (!sub) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  await db.from('grade_reports').delete().eq('submission_id', id)
+  const { error } = await db.from('submissions').delete().eq('id', id).eq('user_id', actor.userId)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ deleted: id })
+}
