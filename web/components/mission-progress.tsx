@@ -42,6 +42,7 @@ const MISSIONS = [
     title: 'Real Data',
     desc: 'Survivorship bias, stale prices, live equity panels',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_05_real_data/notebook.ipynb',
+    langs: ['r', 'julia'] as const,
   },
   {
     id: 'mission_06_advanced_agents',
