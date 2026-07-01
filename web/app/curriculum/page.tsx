@@ -22,6 +22,7 @@ type Mission = {
   subtitle: string
   duration: string
   colab: string
+  langs?: Array<'r' | 'julia'>   // languages this mission is also available in (Python always)
   objectives: string[]
   concepts: string[]
   prereqs: string | null
@@ -32,6 +33,12 @@ type Mission = {
 const repColab = (slug: string) =>
   `https://colab.research.google.com/github/convexpi/replications/blob/main/notebooks/${slug}.ipynb`
 
+// The R/Julia ports live beside the Python notebook as notebook_r.ipynb / notebook_julia.ipynb.
+const colabFor = (base: string, lang: 'python' | 'r' | 'julia') =>
+  lang === 'python'
+    ? base
+    : base.replace('/notebook.ipynb', lang === 'r' ? '/notebook_r.ipynb' : '/notebook_julia.ipynb')
+
 const MISSIONS: Mission[] = [
   {
     number: 1,
@@ -39,6 +46,7 @@ const MISSIONS: Mission[] = [
     subtitle: 'Why in-sample performance is not evidence',
     duration: '60–90 min',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_01_overfitting/notebook.ipynb',
+    langs: ['r', 'julia'],
     objectives: [
       'Explain the difference between in-sample and out-of-sample performance',
       'Construct a cross-sectional signal from synthetic factor data',
@@ -82,6 +90,7 @@ const MISSIONS: Mission[] = [
     subtitle: 'Systematic search under the multiple-testing burden',
     duration: '90–120 min',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_03_alpha_discovery/notebook.ipynb',
+    langs: ['r', 'julia'],
     objectives: [
       'Apply walk-forward validation to avoid look-ahead bias',
       'Control for the multiple-testing problem when scanning features',
@@ -102,6 +111,7 @@ const MISSIONS: Mission[] = [
     subtitle: 'Replication, combination, and the factor zoo',
     duration: '90–120 min',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_04_strategy_library/notebook.ipynb',
+    langs: ['r', 'julia'],
     objectives: [
       'Replicate canonical factor strategies (momentum, value, quality)',
       'Measure pairwise correlation and diversification benefit',
@@ -203,6 +213,7 @@ const ELECTIVES: Mission[] = [
     subtitle: 'Turnover, transaction costs & capacity',
     duration: '60–90 min',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_08_cost_of_trading/notebook.ipynb',
+    langs: ['r', 'julia'],
     objectives: [
       'Quantify how transaction costs scale with turnover and erase paper alpha',
       'Use rebalance frequency and no-trade bands to control turnover',
@@ -226,6 +237,7 @@ const ELECTIVES: Mission[] = [
     subtitle: 'Statistical arbitrage & the spurious-cointegration trap',
     duration: '60–90 min',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_09_pairs_trading/notebook.ipynb',
+    langs: ['r', 'julia'],
     objectives: [
       'Distinguish correlation from cointegration — and why only the latter is tradeable',
       'Test for cointegration (OLS hedge ratio + ADF / Engle–Granger) and form a spread',
@@ -257,10 +269,25 @@ function MissionCard({ m }: { m: Mission }) {
           <h2 className="text-lg font-semibold">{m.title}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">{m.subtitle}</p>
         </div>
-        <a href={m.colab} target="_blank" rel="noopener noreferrer"
-          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0 text-xs')}>
-          Open in Colab
-        </a>
+        <div className="shrink-0 flex flex-col items-end gap-1">
+          <a href={colabFor(m.colab, 'python')} target="_blank" rel="noopener noreferrer"
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-xs')}>
+            Open in Colab{m.langs && m.langs.length > 0 ? ' · Python' : ''}
+          </a>
+          {m.langs && m.langs.length > 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>also in</span>
+              {m.langs.includes('r') && (
+                <a href={colabFor(m.colab, 'r')} target="_blank" rel="noopener noreferrer"
+                  className="underline underline-offset-4 hover:text-foreground">R</a>
+              )}
+              {m.langs.includes('julia') && (
+                <a href={colabFor(m.colab, 'julia')} target="_blank" rel="noopener noreferrer"
+                  className="underline underline-offset-4 hover:text-foreground">Julia</a>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x">

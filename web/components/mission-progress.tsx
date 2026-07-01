@@ -11,6 +11,7 @@ const MISSIONS = [
     title: 'The Overfitting Trap',
     desc: 'IS vs OOS Sharpe, grid-search trap',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_01_overfitting/notebook.ipynb',
+    langs: ['r', 'julia'] as const,
   },
   {
     id: 'mission_02_marketmaker',
@@ -25,6 +26,7 @@ const MISSIONS = [
     title: 'Alpha Discovery',
     desc: 'IC analysis, FDR, walk-forward validation',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_03_alpha_discovery/notebook.ipynb',
+    langs: ['r', 'julia'] as const,
   },
   {
     id: 'mission_04_strategy_library',
@@ -32,6 +34,7 @@ const MISSIONS = [
     title: 'Strategy Library',
     desc: 'Replication, combination, and the factor zoo',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_04_strategy_library/notebook.ipynb',
+    langs: ['r', 'julia'] as const,
   },
   {
     id: 'mission_05_real_data',
@@ -60,6 +63,7 @@ const MISSIONS = [
     title: 'The Cost of Trading · elective',
     desc: 'Turnover, transaction costs, break-even, capacity',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_08_cost_of_trading/notebook.ipynb',
+    langs: ['r', 'julia'] as const,
   },
   {
     id: 'mission_09_pairs_trading',
@@ -67,8 +71,13 @@ const MISSIONS = [
     title: 'Pairs Trading · elective',
     desc: 'Cointegration, spread z-score, spurious pairs',
     colab: 'https://colab.research.google.com/github/convexpi/missions/blob/main/missions/mission_09_pairs_trading/notebook.ipynb',
+    langs: ['r', 'julia'] as const,
   },
 ]
+
+const colabFor = (base: string, lang: 'python' | 'r' | 'julia') =>
+  lang === 'python' ? base
+  : base.replace('/notebook.ipynb', lang === 'r' ? '/notebook_r.ipynb' : '/notebook_julia.ipynb')
 
 export function MissionProgress({ initialCompleted }: { initialCompleted: string[] }) {
   const [completed, setCompleted] = useState<string[]>(initialCompleted)
@@ -139,10 +148,20 @@ export function MissionProgress({ initialCompleted }: { initialCompleted: string
                 </p>
                 <p className="text-xs text-muted-foreground truncate">{m.desc}</p>
               </div>
-              <a href={m.colab} target="_blank" rel="noopener noreferrer"
-                className="text-xs text-[#3b82f6] hover:text-[#2563eb] shrink-0">
-                Open →
-              </a>
+              <div className="shrink-0 flex items-center gap-2 text-xs">
+                <a href={colabFor(m.colab, 'python')} target="_blank" rel="noopener noreferrer"
+                  className="text-[#3b82f6] hover:text-[#2563eb]">
+                  {'langs' in m ? 'Python →' : 'Open →'}
+                </a>
+                {'langs' in m && (m as { langs: readonly string[] }).langs.includes('r') && (
+                  <a href={colabFor(m.colab, 'r')} target="_blank" rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground">R</a>
+                )}
+                {'langs' in m && (m as { langs: readonly string[] }).langs.includes('julia') && (
+                  <a href={colabFor(m.colab, 'julia')} target="_blank" rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground">Julia</a>
+                )}
+              </div>
             </div>
           )
         })}
