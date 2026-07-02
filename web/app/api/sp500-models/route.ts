@@ -39,16 +39,34 @@ export async function POST(request: Request) {
 
   const db = createAdminClient()
 
-  // One active model per name per user: replace it so a nightly refresh updates in place rather
-  // than piling up duplicates.
-  await db.from('sp500_models').update({ status: 'replaced' })
-    .eq('user_id', actor.userId).eq('name', name).eq('status', 'active')
-
-  const { data: model, error } = await db
+  // Stable identity per (user, name): keep ONE persistent model row and refresh its code in place.
+  // The forward track (sp500_forecasts / sp500_scores) keys off the model id, so a nightly re-submit
+  // must reuse the same id to keep accumulating a continuous record — minting a new id every day
+  // fragments the track ("can't link one day to the next"). Collapse any pre-existing duplicates
+  // onto the oldest surviving row.
+  const { data: actives } = await db
     .from('sp500_models')
-    .insert({ user_id: actor.userId, name, code, status: 'active' })
-    .select('id, name, status, created_at')
-    .single()
+    .select('id')
+    .eq('user_id', actor.userId).eq('name', name).eq('status', 'active')
+    .order('created_at', { ascending: true })
+
+  let model: { id: string; name: string; status: string; created_at: string } | null = null
+  let error: { message: string } | null = null
+  if (actives && actives.length > 0) {
+    const keepId = actives[0].id
+    if (actives.length > 1) {
+      await db.from('sp500_models').update({ status: 'replaced' })
+        .in('id', actives.slice(1).map((a) => a.id))
+    }
+    ;({ data: model, error } = await db.from('sp500_models')
+      .update({ code })
+      .eq('id', keepId)
+      .select('id, name, status, created_at').single())
+  } else {
+    ;({ data: model, error } = await db.from('sp500_models')
+      .insert({ user_id: actor.userId, name, code, status: 'active' })
+      .select('id, name, status, created_at').single())
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
