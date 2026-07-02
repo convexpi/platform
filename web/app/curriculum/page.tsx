@@ -57,7 +57,11 @@ const MISSIONS: Mission[] = [
     prereqs: 'Basic Python and NumPy. No finance background required.',
     reading: {
       surveys: [{ slug: 'factor-zoo', title: 'The Factor Zoo & Replication Crisis' }],
-      links: [{ label: 'Anomaly graveyard — what survived', href: '/anomalies' }],
+      links: [
+        { label: 'Lecture: p-Hacking & multiple comparisons', href: '/lectures/p-hacking' },
+        { label: 'Lecture: the Information Coefficient', href: '/lectures/information-coefficient' },
+        { label: 'Anomaly graveyard — what survived', href: '/anomalies' },
+      ],
       note: 'The survey is the “why” behind this mission: most published edges are in-sample artefacts that vanish out of sample.',
     },
   },
@@ -102,7 +106,11 @@ const MISSIONS: Mission[] = [
     prereqs: 'Mission 1. Basic statistics (t-tests, correlation).',
     reading: {
       surveys: [{ slug: 'factor-zoo', title: 'The Factor Zoo & Replication Crisis' }],
-      links: [{ label: 'Anomaly graveyard — decay histories', href: '/anomalies' }],
+      links: [
+        { label: 'Lecture: the Information Coefficient', href: '/lectures/information-coefficient' },
+        { label: 'Lecture: p-Hacking & multiple comparisons', href: '/lectures/p-hacking' },
+        { label: 'Anomaly graveyard — decay histories', href: '/anomalies' },
+      ],
       note: 'The replication-crisis survey covers the multiple-testing burden head-on: with hundreds of factors tested, a high t-stat is not enough.',
     },
   },
