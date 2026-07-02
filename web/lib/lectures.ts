@@ -54,6 +54,41 @@ export const LECTURES: Lecture[] = [
     ],
     relatedMissions: [1, 3],
   },
+  {
+    slug: 'stylized-facts',
+    title: 'Do Our Markets Look Real? Stylized Facts',
+    summary:
+      'Real returns aren’t Gaussian white noise — they have heavy tails, near-zero return ' +
+      'autocorrelation but persistent volatility clustering, and gain/loss asymmetry. We generate ' +
+      'returns with and without these stylized facts (via finmlsim) and measure the difference — the ' +
+      'same GARCH engine behind the Lab’s realistic market mode.',
+    duration: '20–30 min',
+    notebook: 'stylized_facts',
+    topics: ['Heavy tails', 'Volatility clustering', 'Return autocorrelation', 'GARCH / finmlsim'],
+    takeaways: [
+      'Gaussian is a lie for returns — real tails are heavy; size risk for 5-sigma days.',
+      'Direction is ≈ unpredictable, but volatility is not — clustering is the exploitable fact.',
+      'Measure, don’t assume: finmlsim’s stylized-facts summary tells you if a series is honest.',
+    ],
+    relatedMissions: [1, 8],
+  },
+  {
+    slug: 'optimal-execution',
+    title: 'Optimal Execution: the Almgren-Chriss Frontier',
+    summary:
+      'Unwind a big position too fast and you pay huge market impact; too slow and you carry price ' +
+      'risk the whole time. Almgren-Chriss makes the trade-off precise, and we trace its efficient ' +
+      'frontier (via finmlsim) — the per-order companion to Mission 8’s portfolio-level cost of trading.',
+    duration: '20–30 min',
+    notebook: 'optimal_execution',
+    topics: ['Market impact', 'Timing risk', 'Efficient frontier', 'Almgren-Chriss'],
+    takeaways: [
+      'Impact vs. timing risk is the core execution trade-off — faster cuts risk but costs impact.',
+      'Risk aversion (λ) picks your point on the frontier; there is no single optimal speed.',
+      'Impact is convex in size — which is why capacity (Mission 8) is finite.',
+    ],
+    relatedMissions: [8],
+  },
 ]
 
 export const getLecture = (slug: string) => LECTURES.find((l) => l.slug === slug)
