@@ -81,6 +81,7 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState<Submission | null>(null)
   const [audit, setAudit] = useState<AuditResult | null>(null)
+  const [mySubs, setMySubs] = useState<Submission[]>(pastSubmissions)
   const supabase = createClient()
 
   // Rerun audit 600ms after the user stops typing (Python-only — the auditor parses Python).
@@ -245,11 +246,14 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
         )}
       </form>
 
-      {pastSubmissions.length > 0 && (
+      {mySubs.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold mb-4">My submissions</h2>
           <div className="flex flex-col gap-3">
-            {pastSubmissions.map(s => <SubmissionRow key={s.id} submission={s} />)}
+            {mySubs.map(s => (
+              <SubmissionRow key={s.id} submission={s}
+                onDeleted={() => setMySubs(prev => prev.filter(x => x.id !== s.id))} />
+            ))}
           </div>
         </div>
       )}
@@ -257,7 +261,16 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
   )
 }
 
-function SubmissionRow({ submission: s }: { submission: Submission }) {
+function SubmissionRow({ submission: s, onDeleted }: { submission: Submission; onDeleted: () => void }) {
+  const [deleting, setDeleting] = useState(false)
+  async function del() {
+    if (!confirm(`Delete submission "${s.strategy_name}"? This removes it and its grade report.`)) return
+    setDeleting(true)
+    const res = await fetch(`/api/submissions/${s.id}`, { method: 'DELETE' })
+    if (res.ok) { onDeleted(); return }
+    setDeleting(false)
+    alert('Could not delete this submission.')
+  }
   const statusColor = {
     pending: 'secondary',
     running: 'default',
@@ -277,6 +290,14 @@ function SubmissionRow({ submission: s }: { submission: Submission }) {
               {new Date(s.submitted_at).toLocaleDateString()}
             </span>
             <Badge variant={statusColor[s.status]}>{s.status}</Badge>
+            <button
+              onClick={del}
+              disabled={deleting}
+              title="Delete this submission"
+              className="text-xs text-muted-foreground hover:text-destructive disabled:opacity-50"
+            >
+              {deleting ? '…' : 'Delete'}
+            </button>
           </div>
         </div>
       </CardHeader>
