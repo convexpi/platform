@@ -105,6 +105,10 @@ export default async function Home() {
                   </Button>
                 </Link>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Work in <span className="text-foreground font-medium">Python, R, or Julia</span> —
+                the same hidden-holdout engine scores all three.
+              </p>
             </div>
             <div className="hidden lg:flex items-center justify-center h-[360px]">
               <HeroViz />
@@ -137,6 +141,7 @@ export default async function Home() {
                 desc: 'A simulation-first curriculum and a research library that is candid about which anomalies survive and which decayed after publication.',
                 links: [
                   { t: 'Curriculum — 9 missions', href: '/curriculum', ext: false },
+                  { t: 'Lectures', href: '/lectures', ext: false },
                   { t: 'Topic surveys', href: '/surveys', ext: false },
                   { t: 'Research papers + wikis', href: '/papers', ext: false },
                   { t: 'Anomaly graveyard', href: '/anomalies', ext: false },

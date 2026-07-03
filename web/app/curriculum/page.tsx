@@ -401,6 +401,11 @@ export default function CurriculumPage() {
           advanced electives on market microstructure and trading costs.
           All missions run in Google Colab. No local installation required.
         </p>
+        <p className="text-muted-foreground mt-3 leading-relaxed">
+          Every mission comes in <span className="text-foreground font-medium">Python, R, and Julia</span> —
+          the same hidden-holdout engine scores all three, so the same idea earns the same
+          out-of-sample result in any language.
+        </p>
         <div className="flex gap-3 mt-6">
           <Link href="/getting-started" className={cn(buttonVariants())}>
             Start Mission 1
