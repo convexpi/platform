@@ -20,7 +20,7 @@ export async function submitSp500Model(fd: FormData) {
     .order('created_at', { ascending: true })
   if (actives && actives.length > 0) {
     if (actives.length > 1) {
-      await supabase.from('sp500_models').update({ status: 'replaced' })
+      await supabase.from('sp500_models').update({ status: 'disabled' })
         .in('id', actives.slice(1).map((a) => a.id))
     }
     await supabase.from('sp500_models').update({ code: trimmed }).eq('id', actives[0].id)

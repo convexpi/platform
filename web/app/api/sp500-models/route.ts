@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   if (actives && actives.length > 0) {
     const keepId = actives[0].id
     if (actives.length > 1) {
-      await db.from('sp500_models').update({ status: 'replaced' })
+      await db.from('sp500_models').update({ status: 'disabled' })
         .in('id', actives.slice(1).map((a) => a.id))
     }
     ;({ data: model, error } = await db.from('sp500_models')
