@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/api/', '/dashboard', '/profile/edit', '/compete/new'],
+      disallow: ['/api/', '/admin', '/dashboard', '/settings', '/notifications', '/profile/edit', '/compete/new', '/classroom/new'],
     },
     sitemap: 'https://convexpi.ai/sitemap.xml',
   }
