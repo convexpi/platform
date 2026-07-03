@@ -1,62 +1,88 @@
 import { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { FACTORS } from '@/lib/research-data'
+import { LECTURES } from '@/lib/lectures'
 
 const BASE_URL = 'https://convexpi.ai'
+
+type Freq = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
+const entry = (path: string, priority: number, changeFrequency: Freq, lastModified: Date) =>
+  ({ url: `${BASE_URL}${path}`, lastModified, changeFrequency, priority })
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
-  // Static pages
-  const staticRoutes: MetadataRoute.Sitemap = [
-    { url: BASE_URL, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
-    { url: `${BASE_URL}/research`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${BASE_URL}/community`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
-    { url: `${BASE_URL}/getting-started`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE_URL}/login`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${BASE_URL}/signup`, lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
+  // Public, indexable pages (path, priority, change frequency).
+  const STATIC: [string, number, Freq][] = [
+    ['', 1.0, 'weekly'],
+    // Learn
+    ['/overview', 0.9, 'weekly'],
+    ['/getting-started', 0.8, 'monthly'],
+    ['/curriculum', 0.9, 'weekly'],
+    ['/lectures', 0.8, 'weekly'],
+    ['/teach', 0.7, 'monthly'],
+    ['/exchange', 0.7, 'monthly'],
+    ['/exchange/realistic', 0.6, 'monthly'],
+    ['/lessons/market-making', 0.6, 'monthly'],
+    ['/glossary', 0.5, 'monthly'],
+    // Research
+    ['/research', 0.9, 'monthly'],
+    ['/surveys', 0.8, 'weekly'],
+    ['/papers', 0.7, 'weekly'],
+    ['/anomalies', 0.8, 'weekly'],
+    ['/replications', 0.8, 'monthly'],
+    // Practice
+    ['/compete', 0.8, 'daily'],
+    ['/agents', 0.7, 'daily'],
+    ['/playground', 0.7, 'monthly'],
+    // Community
+    ['/projects', 0.7, 'daily'],
+    ['/community', 0.8, 'daily'],
+    ['/contributors', 0.6, 'weekly'],
+    ['/about', 0.5, 'yearly'],
+    // Auth
+    ['/login', 0.3, 'yearly'],
+    ['/signup', 0.4, 'yearly'],
   ]
+  const staticRoutes = STATIC.map(([p, pri, f]) => entry(p, pri, f, now))
 
-  // Research factor pages (statically known)
-  const factorRoutes: MetadataRoute.Sitemap = FACTORS.map(f => ({
-    url: `${BASE_URL}/research/${f.slug}`,
-    lastModified: now,
-    changeFrequency: 'monthly' as const,
-    priority: 0.8,
-  }))
+  // Lecture detail pages (static content).
+  const lectureRoutes = LECTURES.map(l => entry(`/lectures/${l.slug}`, 0.7, 'monthly', now))
 
-  // Public competition pages
+  // Research factor pages (statically known).
+  const factorRoutes = FACTORS.map(f => entry(`/research/${f.slug}`, 0.8, 'monthly', now))
+
+  // DB-backed public content.
   let cohortRoutes: MetadataRoute.Sitemap = []
   let profileRoutes: MetadataRoute.Sitemap = []
+  let surveyRoutes: MetadataRoute.Sitemap = []
+  let projectRoutes: MetadataRoute.Sitemap = []
 
   try {
     const supabase = await createClient()
 
     const { data: cohorts } = await supabase
-      .from('cohorts')
-      .select('slug, created_at, type')
-      .eq('visibility', 'public')
+      .from('cohorts').select('slug, created_at, type').eq('visibility', 'public')
+    cohortRoutes = (cohorts ?? []).map(c => entry(
+      `/${c.type === 'competition' ? 'compete' : 'classroom'}/${c.slug}`,
+      0.6, 'daily', new Date(c.created_at ?? now)))
 
-    cohortRoutes = (cohorts ?? []).map(c => ({
-      url: `${BASE_URL}/${c.type === 'competition' ? 'compete' : 'classroom'}/${c.slug}`,
-      lastModified: new Date(c.created_at ?? now),
-      changeFrequency: 'daily' as const,
-      priority: 0.6,
-    }))
+    const { data: profiles } = await supabase.from('profiles').select('username, created_at')
+    profileRoutes = (profiles ?? []).map(p => entry(`/profile/${p.username}`, 0.5, 'weekly', new Date(p.created_at ?? now)))
 
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('username, created_at')
+    const { data: surveys } = await supabase
+      .from('surveys').select('slug').eq('status', 'published')
+    surveyRoutes = (surveys ?? []).map(s => entry(`/surveys/${s.slug}`, 0.6, 'monthly', now))
 
-    profileRoutes = (profiles ?? []).map(p => ({
-      url: `${BASE_URL}/profile/${p.username}`,
-      lastModified: new Date(p.created_at ?? now),
-      changeFrequency: 'weekly' as const,
-      priority: 0.5,
-    }))
+    const { data: projects } = await supabase
+      .from('projects').select('slug, published_at').eq('status', 'published')
+    projectRoutes = (projects ?? []).map(p => entry(`/projects/${p.slug}`, 0.5, 'weekly', new Date(p.published_at ?? now)))
   } catch {
-    // DB unavailable at build time — static routes still served
+    // DB unavailable at build time — static routes still served.
   }
 
-  return [...staticRoutes, ...factorRoutes, ...cohortRoutes, ...profileRoutes]
+  return [
+    ...staticRoutes, ...lectureRoutes, ...factorRoutes,
+    ...cohortRoutes, ...profileRoutes, ...surveyRoutes, ...projectRoutes,
+  ]
 }
