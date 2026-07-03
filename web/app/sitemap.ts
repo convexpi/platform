@@ -3,6 +3,15 @@ import { createClient } from '@/lib/supabase/server'
 import { FACTORS } from '@/lib/research-data'
 import { LECTURES } from '@/lib/lectures'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MAINTENANCE: keep this in sync with the routes under app/.
+//   • Added a new PUBLIC page (a new app/<route>/page.tsx)?  Add it to STATIC below.
+//   • New DB-backed content type with its own pages (like surveys/projects)?  Add a query block.
+//   • Private/authed pages (admin, dashboard, settings, notifications, *_new, edit) stay OUT —
+//     and should also be listed in app/robots.ts `disallow`.
+// A quick check when routes change: `find app -name page.tsx` vs. the entries here.
+// ─────────────────────────────────────────────────────────────────────────────
+
 const BASE_URL = 'https://convexpi.ai'
 
 type Freq = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
