@@ -106,8 +106,11 @@ export default async function Home() {
                 </Link>
               </div>
               <p className="text-sm text-muted-foreground">
-                Work in <span className="text-foreground font-medium">Python, R, or Julia</span> —
-                the same hidden-holdout engine scores all three.
+                Work in{' '}
+                <Link href="/sdks" className="text-foreground font-medium underline underline-offset-4 decoration-muted-foreground/40 hover:decoration-foreground">
+                  Python, R, or Julia
+                </Link>{' '}
+                — the same hidden-holdout engine scores all three.
               </p>
             </div>
             <div className="hidden lg:flex items-center justify-center h-[360px]">

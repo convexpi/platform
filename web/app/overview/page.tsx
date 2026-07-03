@@ -19,6 +19,7 @@ const PILLARS: Pillar[] = [
       { href: '/curriculum', label: 'Curriculum (9 missions)', desc: 'The core course: overfitting → alpha discovery. In Python, R, and Julia.' },
       { href: '/teach', label: 'Teach (instructors)', desc: 'Run it as a course: classroom, auto-grading, dashboard.' },
       { href: '/lectures', label: 'Lectures', desc: 'p-hacking, the Information Coefficient.' },
+      { href: '/sdks', label: 'SDKs (Python · R · Julia)', desc: 'One engine, three languages — install, fit, submit.' },
       { href: '/lessons/market-making', label: 'Market-making lesson', desc: 'Earn the spread; manage inventory & adverse selection.' },
       { href: '/exchange', label: 'How the exchange works', desc: 'The matching engine, in plain English.' },
       { href: '/exchange/realistic', label: 'The realistic exchange (L3)', desc: 'Queue position, latency, the cancel race.' },
