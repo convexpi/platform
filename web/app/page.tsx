@@ -411,7 +411,10 @@ export default async function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { repo: 'lab', desc: 'Synthetic equity panels, walk-forward backtests, hidden-holdout grading, anomaly replication, real-data mode.' },
+              { repo: 'convexpi-r', desc: 'R client — write strategies (and Arena agents) in R, scored by the same engine as Python and Julia.' },
+              { repo: 'ConvexPi.jl', desc: 'Julia client — write strategies (and Arena agents) in Julia, scored by the same engine as Python and R.' },
               { repo: 'arena', desc: 'Discrete-time limit-order-book simulator for deploying live trading and market-making agents.' },
+              { repo: 'finmlsim', desc: 'Scholarly market, microstructure, and execution simulators (GARCH, Heston, Kyle, Almgren-Chriss) powering the realistic market modes.' },
               { repo: 'replications', desc: 'Verified reference replications of canonical strategies — recomputed from building blocks, scored out of sample, CI-checked.' },
               { repo: 'content', desc: 'Community-edited paper wikis and research notes — anyone can suggest an edit via GitHub.' },
               { repo: 'missions', desc: 'The mission notebooks and assignments behind the curriculum.' },
