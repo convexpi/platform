@@ -10,6 +10,8 @@ import { submitSp500Model } from '../sp500-actions'
 import { STARTERS, competitionKind } from '@/lib/starters'
 import { competitionSpec } from '@/lib/competition-spec'
 import { SpecHeader, SpecSection, SpecNav, CanonicalSpecSections, CANONICAL_NAV } from '@/components/competition-spec'
+import { LIVE_MIN_DAYS, compareSp500, liveQualified, type Sp500Score } from '@/lib/sp500-scoring'
+import { Sp500LiveCurves, type Curve } from '@/components/sp500-live-curves'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,8 +48,8 @@ export default async function CompetitionOverview({ params }: { params: Promise<
   // ---------------------------------------------------------------------------
   if (slug === 'sp500-nextday') {
     const { data: models } = await supabase.from('sp500_models').select('id, name, user_id').eq('status', 'active')
-    const { data: scores } = await supabase.from('sp500_scores').select('model_id, hit_rate, cum_return, sharpe, n_days, last_date, live_sharpe, live_days, live_cum_return')
-    type Score = { model_id: string; hit_rate: number; cum_return: number; sharpe: number; n_days: number; last_date: string; live_sharpe: number | null; live_days: number | null; live_cum_return: number | null }
+    const { data: scores } = await supabase.from('sp500_scores').select('model_id, hit_rate, cum_return, sharpe, n_days, last_date, live_sharpe, live_days, live_hit_rate, live_cum_return')
+    type Score = Sp500Score & { model_id: string; last_date: string }
     const sBy = new Map((scores ?? []).map((s) => [(s as Score).model_id, s as Score]))
     const uIds = [...new Set((models ?? []).map((m) => m.user_id).filter(Boolean))] as string[]
     const { data: profs } = uIds.length
@@ -59,9 +61,42 @@ export default async function CompetitionOverview({ params }: { params: Promise<
       return { id: m.id as string, name: m.name as string, mine: !!user && m.user_id === user.id,
                author: m.user_id ? (p?.display_name || (p?.username ? `@${p.username}` : 'someone')) : 'ConvexPi',
                s: sBy.get(m.id as string) }
-    }).sort((a, b) =>   // live track leads once it exists; backtest Sharpe breaks ties / orders new models
-      (b.s?.live_sharpe ?? -Infinity) - (a.s?.live_sharpe ?? -Infinity) || (b.s?.sharpe ?? -Infinity) - (a.s?.sharpe ?? -Infinity))
+    }).sort(compareSp500)   // live track leads once it has enough sessions to mean anything; backtest orders the rest
     const lastDate = (scores ?? [])[0] ? (scores as Score[]).map(s => s.last_date).sort().slice(-1)[0] : null
+
+    // ---- Vol-scaled live equity curves -------------------------------------------------------
+    // The realized forward PnLs are the live track itself, so the chart and the Live columns can
+    // never disagree. Each model is rescaled to a common target vol before compounding: without
+    // that, the curves rank leverage rather than skill.
+    const TARGET_VOL = 0.10                                   // annualised
+    const dailyTarget = TARGET_VOL / Math.sqrt(252)
+    const { data: fc } = await supabase.from('sp500_forecasts')
+      .select('model_id, as_of, pnl').not('pnl', 'is', null).order('as_of', { ascending: true })
+    const byModel = new Map<string, { as_of: string; pnl: number }[]>()
+    for (const f of (fc ?? []) as { model_id: string; as_of: string; pnl: number }[]) {
+      const arr = byModel.get(f.model_id) ?? []
+      arr.push({ as_of: f.as_of, pnl: f.pnl })
+      byModel.set(f.model_id, arr)
+    }
+    const chartDates = [...new Set((fc ?? []).map((f) => (f as { as_of: string }).as_of))].sort()
+    const dateIdx = new Map(chartDates.map((d, i) => [d, i]))
+    const curves: Curve[] = rows.flatMap((r) => {
+      const series = byModel.get(r.id)
+      if (!series || series.length < 2) return []
+      const mean = series.reduce((a, s) => a + s.pnl, 0) / series.length
+      const sd = Math.sqrt(series.reduce((a, s) => a + (s.pnl - mean) ** 2, 0) / series.length)
+      if (!(sd > 1e-12)) return []                             // a flat model has no vol to scale to
+      const scale = dailyTarget / sd
+      const points: (number | null)[] = new Array(chartDates.length).fill(null)
+      let equity = 1
+      for (const s of series) {
+        const i = dateIdx.get(s.as_of)
+        if (i == null) continue
+        equity *= 1 + scale * s.pnl
+        points[i] = equity - 1
+      }
+      return [{ id: r.id, name: r.name, author: r.author, points, scale }]
+    })
 
     const TEMPLATE = spec.submit.example
 
@@ -74,36 +109,70 @@ export default async function CompetitionOverview({ params }: { params: Promise<
         <SpecSection id="standings" title={`Standings${lastDate ? ` · through ${lastDate}` : ''}`}>
           <div className="rounded-xl border border-border overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="bg-secondary/50 text-xs text-muted-foreground">
-                <th className="text-left px-3 py-2">#</th><th className="text-left px-3 py-2">Model</th>
-                <th className="text-right px-3 py-2">Live Sharpe</th><th className="text-right px-3 py-2">Live days</th>
-                <th className="text-right px-3 py-2">Backtest (252d)</th><th className="text-right px-3 py-2">Hit</th>
-                <th className="text-right px-3 py-2">Cum. PnL</th>
-              </tr></thead>
+              {/* Two header rows: every metric sits under the track it was measured on. The live and
+                  backtest numbers cover different windows and must never read as one series. */}
+              <thead className="bg-secondary/50 text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-3 pt-2" colSpan={2} />
+                  <th className="text-center px-3 pt-2 border-l border-border" colSpan={4}>Live · forward-only</th>
+                  <th className="text-center px-3 pt-2 border-l border-border" colSpan={3}>Backtest · 252d</th>
+                </tr>
+                <tr>
+                  <th className="text-left px-3 pb-2">#</th><th className="text-left px-3 pb-2">Model</th>
+                  <th className="text-right px-3 pb-2 border-l border-border">Sharpe</th><th className="text-right px-3 pb-2">Days</th>
+                  <th className="text-right px-3 pb-2">Hit</th><th className="text-right px-3 pb-2">PnL</th>
+                  <th className="text-right px-3 pb-2 border-l border-border">Sharpe</th><th className="text-right px-3 pb-2">Hit</th>
+                  <th className="text-right px-3 pb-2">PnL</th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-border">
                 {rows.map((r, i) => {
                   const liveSharpe = r.s?.live_sharpe
                   const liveDays = r.s?.live_days ?? 0
+                  // Below the threshold the live Sharpe is shown but greyed: it isn't ranked on, and at
+                  // this sample size it is not distinguishable from zero.
+                  const provisional = !liveQualified(r.s)
+                  const signed = (v: number | null | undefined) =>
+                    v == null ? 'text-muted-foreground' : v >= 0 ? 'text-emerald-600' : 'text-red-500'
+                  const pct = (v: number | null | undefined, d = 0) => v == null ? '—' : `${(v * 100).toFixed(d)}%`
                   return (
                   <tr key={r.id} className={r.mine ? 'bg-[#C9A34E]/5' : ''}>
                     <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                     <td className="px-3 py-2"><span className="font-medium text-foreground">{r.name}</span> <span className="text-xs text-muted-foreground">{r.author}</span></td>
-                    <td className={`px-3 py-2 text-right font-mono font-semibold ${liveSharpe == null ? 'text-muted-foreground' : liveSharpe >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{liveSharpe == null ? '—' : liveSharpe.toFixed(2)}</td>
+                    <td className={`px-3 py-2 text-right font-mono font-semibold border-l border-border ${provisional ? 'text-muted-foreground' : signed(liveSharpe)}`}
+                        title={provisional ? `Provisional — ${liveDays}/${LIVE_MIN_DAYS} sessions; not ranked on yet` : undefined}>
+                      {liveSharpe == null ? '—' : liveSharpe.toFixed(2)}{provisional && liveSharpe != null ? '*' : ''}
+                    </td>
                     <td className="px-3 py-2 text-right font-mono text-muted-foreground">{liveDays}</td>
-                    <td className={`px-3 py-2 text-right font-mono ${(r.s?.sharpe ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{r.s ? r.s.sharpe.toFixed(2) : '—'}</td>
-                    <td className="px-3 py-2 text-right font-mono">{r.s ? `${(r.s.hit_rate * 100).toFixed(0)}%` : '—'}</td>
-                    <td className={`px-3 py-2 text-right font-mono ${(r.s?.cum_return ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{r.s ? `${(r.s.cum_return * 100).toFixed(1)}%` : '—'}</td>
+                    <td className="px-3 py-2 text-right font-mono">{pct(r.s?.live_hit_rate)}</td>
+                    <td className={`px-3 py-2 text-right font-mono ${signed(r.s?.live_cum_return)}`}>{pct(r.s?.live_cum_return, 1)}</td>
+                    <td className={`px-3 py-2 text-right font-mono border-l border-border ${signed(r.s?.sharpe)}`}>{r.s?.sharpe != null ? r.s.sharpe.toFixed(2) : '—'}</td>
+                    <td className="px-3 py-2 text-right font-mono">{pct(r.s?.hit_rate)}</td>
+                    <td className={`px-3 py-2 text-right font-mono ${signed(r.s?.cum_return)}`}>{pct(r.s?.cum_return, 1)}</td>
                   </tr>
                   )
                 })}
-                {rows.length === 0 && <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">No models yet.</td></tr>}
+                {rows.length === 0 && <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">No models yet.</td></tr>}
               </tbody>
             </table>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
             <span className="text-foreground">Live</span> = forward-only track since each model went active (the honest score; it grows daily).{' '}
-            <span className="text-foreground">Backtest</span> = a rolling 252-day walk-forward over real prices, recomputed daily — a baseline that’s comparable from day one.
+            <span className="text-foreground">Backtest</span> = a rolling 252-day walk-forward over real prices, recomputed daily — a baseline that’s comparable from day one.{' '}
+            The two groups cover different windows, so read across a group, never across the divider.
           </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            <span className="font-mono">*</span> Provisional: fewer than {LIVE_MIN_DAYS} live sessions, so the model is ranked on its
+            backtest for now. An annualised Sharpe from <span className="font-mono">n</span> days carries a standard error of about{' '}
+            <span className="font-mono">√(252/n)</span> — at 21 days that’s ±3.5, wide enough that most of this board is
+            indistinguishable from zero.
+          </p>
+          {curves.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-sm font-medium mb-1">Live curves · vol-scaled to {(TARGET_VOL * 100).toFixed(0)}%</h3>
+              <Sp500LiveCurves dates={chartDates} curves={curves} targetVol={TARGET_VOL} />
+            </div>
+          )}
         </SpecSection>
 
         <CanonicalSpecSections spec={spec} dataSummary={dataSummary} />
