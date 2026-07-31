@@ -28,9 +28,15 @@ test('landing page has a call-to-action link', async ({ page }) => {
   await expect(cta).toBeVisible()
 })
 
-test('nav contains Compete link', async ({ page }) => {
+test('nav reaches the competitions page', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('link', { name: /Compete/i }).first()).toBeVisible()
+  // /compete sits inside the "Practice" dropdown, which mounts its items on open. The items render
+  // as role=menuitem (not link), and a regex `name` is matched against the WHOLE accessible name —
+  // so the old `getByRole('link', { name: /Compete/i })` could never match the "Competitions" label.
+  await page.getByRole('button', { name: 'Practice' }).click()
+  const item = page.getByRole('menu').getByRole('menuitem', { name: 'Competitions' })
+  await expect(item).toBeVisible()
+  await expect(item).toHaveAttribute('href', '/compete')
 })
 
 test('/compete page renders leaderboard or redirect', async ({ page }) => {
@@ -78,8 +84,9 @@ test('mobile: drawer opens when hamburger clicked', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   await page.getByRole('button', { name: /open menu/i }).click()
-  // Drawer should contain the Compete link
-  await expect(page.getByRole('link', { name: /Compete/i }).first()).toBeVisible()
+  // The drawer flattens every group into plain links, so scope to the drawer to avoid matching the
+  // footer's copy of the same link.
+  await expect(page.getByRole('dialog').getByRole('link', { name: 'Competitions' })).toBeVisible()
 })
 
 // ---------------------------------------------------------------------------

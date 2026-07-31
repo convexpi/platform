@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient, tryCreateAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -99,15 +99,19 @@ function nextUsClose(): string {
 }
 
 export default async function CompetePage() {
-  const db = createAdminClient()
-  const { data: competitions } = await db.from('cohorts').select('*')
-    .eq('type', 'competition').eq('visibility', 'public')
-    .order('status', { ascending: true }).order('created_at', { ascending: false })
-
-  const all = (competitions ?? []) as Cohort[]
-  const live = await Promise.all(all.map(async c => {
-    const m = metaFor(c); return { c, m, l: await enrich(db, c, m.kind) }
-  }))
+  // Without the service role there are no standings to show, but the page itself still has content
+  // worth rendering. Degrade to the explainer shell instead of throwing a 500 at every visitor.
+  const db = tryCreateAdminClient()
+  const all = db
+    ? (((await db.from('cohorts').select('*')
+        .eq('type', 'competition').eq('visibility', 'public')
+        .order('status', { ascending: true }).order('created_at', { ascending: false })).data ?? []) as Cohort[])
+    : []
+  const live = db
+    ? await Promise.all(all.map(async c => {
+        const m = metaFor(c); return { c, m, l: await enrich(db, c, m.kind) }
+      }))
+    : []
   const byStatus = (s: string) => live.filter(x => x.c.status === s)
   const hero = live.find(x => x.c.slug === 'sp500-nextday' && x.c.status === 'active')
   const activeCards = byStatus('active').filter(x => x !== hero)
