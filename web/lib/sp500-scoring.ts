@@ -28,6 +28,31 @@ export type Sp500Score = {
   live_days: number | null
   live_hit_rate: number | null
   live_cum_return: number | null
+  // Added by 20260731_sp500_costs_and_deflation.sql. Optional so the page renders either side of
+  // that migration — the queries select '*' rather than naming columns for the same reason.
+  gross_sharpe?: number | null
+  cost_drag?: number | null
+  turnover?: number | null
+  excess_return?: number | null
+  info_ratio?: number | null
+  live_info_ratio?: number | null
+  live_turnover?: number | null
+  live_deflated_sharpe?: number | null
+}
+
+/**
+ * How much confidence the deflated Sharpe warrants, as a label rather than a bare number.
+ *
+ * The DSR is the probability a model's true Sharpe beats zero *after* accounting for the whole
+ * field having been tried. Bands keep readers from over-reading a third decimal place on what is
+ * fundamentally a "is this real?" question.
+ */
+export function confidenceBand(dsr: number | null | undefined) {
+  if (dsr == null) return { label: '—', tone: 'muted', hint: 'Not enough live history yet.' }
+  if (dsr >= 0.95) return { label: 'Strong', tone: 'good', hint: 'Survives the multiple-testing correction.' }
+  if (dsr >= 0.75) return { label: 'Promising', tone: 'ok', hint: 'Suggestive, not yet conclusive.' }
+  if (dsr >= 0.5) return { label: 'Coin flip', tone: 'weak', hint: 'About as likely as not to be luck.' }
+  return { label: 'Likely luck', tone: 'bad', hint: 'Below what the best of this field would post by chance.' }
 }
 
 /** Has this model accumulated enough forward sessions for its live Sharpe to carry the ranking? */

@@ -10,7 +10,7 @@ import { submitSp500Model } from '../sp500-actions'
 import { STARTERS, competitionKind } from '@/lib/starters'
 import { competitionSpec } from '@/lib/competition-spec'
 import { SpecHeader, SpecSection, SpecNav, CanonicalSpecSections, CANONICAL_NAV } from '@/components/competition-spec'
-import { LIVE_MIN_DAYS, compareSp500, liveQualified, type Sp500Score } from '@/lib/sp500-scoring'
+import { LIVE_MIN_DAYS, compareSp500, confidenceBand, liveQualified, type Sp500Score } from '@/lib/sp500-scoring'
 import { Sp500LiveCurves, type Curve } from '@/components/sp500-live-curves'
 
 export const dynamic = 'force-dynamic'
@@ -47,8 +47,11 @@ export default async function CompetitionOverview({ params }: { params: Promise<
   // S&P next-day forecast — its own game (live forecasts on real prices)
   // ---------------------------------------------------------------------------
   if (slug === 'sp500-nextday') {
-    const { data: models } = await supabase.from('sp500_models').select('id, name, user_id').eq('status', 'active')
-    const { data: scores } = await supabase.from('sp500_scores').select('model_id, hit_rate, cum_return, sharpe, n_days, last_date, live_sharpe, live_days, live_hit_rate, live_cum_return')
+    // select('*') rather than naming columns: the cost/deflation and model-status migrations may
+    // not have been applied yet, and naming a missing column errors the whole query, which would
+    // blank the standings instead of degrading one cell.
+    const { data: models } = await supabase.from('sp500_models').select('*').eq('status', 'active')
+    const { data: scores } = await supabase.from('sp500_scores').select('*')
     type Score = Sp500Score & { model_id: string; last_date: string }
     const sBy = new Map((scores ?? []).map((s) => [(s as Score).model_id, s as Score]))
     const uIds = [...new Set((models ?? []).map((m) => m.user_id).filter(Boolean))] as string[]
@@ -60,6 +63,8 @@ export default async function CompetitionOverview({ params }: { params: Promise<
       const p = m.user_id ? pBy.get(m.user_id) : null
       return { id: m.id as string, name: m.name as string, mine: !!user && m.user_id === user.id,
                author: m.user_id ? (p?.display_name || (p?.username ? `@${p.username}` : 'someone')) : 'ConvexPi',
+               // Present only after 20260731_sp500_model_status.sql; undefined reads as "no error".
+               error: (m as { last_error?: string | null }).last_error ?? null,
                s: sBy.get(m.id as string) }
     }).sort(compareSp500)   // live track leads once it has enough sessions to mean anything; backtest orders the rest
     const lastDate = (scores ?? [])[0] ? (scores as Score[]).map(s => s.last_date).sort().slice(-1)[0] : null
@@ -114,13 +119,14 @@ export default async function CompetitionOverview({ params }: { params: Promise<
               <thead className="bg-secondary/50 text-xs text-muted-foreground">
                 <tr>
                   <th className="px-3 pt-2" colSpan={2} />
-                  <th className="text-center px-3 pt-2 border-l border-border" colSpan={4}>Live · forward-only</th>
+                  <th className="text-center px-3 pt-2 border-l border-border" colSpan={5}>Live · forward-only</th>
                   <th className="text-center px-3 pt-2 border-l border-border" colSpan={3}>Backtest · 252d</th>
                 </tr>
                 <tr>
                   <th className="text-left px-3 pb-2">#</th><th className="text-left px-3 pb-2">Model</th>
                   <th className="text-right px-3 pb-2 border-l border-border">Sharpe</th><th className="text-right px-3 pb-2">Days</th>
                   <th className="text-right px-3 pb-2">Hit</th><th className="text-right px-3 pb-2">PnL</th>
+                  <th className="text-right px-3 pb-2" title="Probability the edge is real once the whole field's worth of attempts is accounted for">Real?</th>
                   <th className="text-right px-3 pb-2 border-l border-border">Sharpe</th><th className="text-right px-3 pb-2">Hit</th>
                   <th className="text-right px-3 pb-2">PnL</th>
                 </tr>
@@ -135,10 +141,18 @@ export default async function CompetitionOverview({ params }: { params: Promise<
                   const signed = (v: number | null | undefined) =>
                     v == null ? 'text-muted-foreground' : v >= 0 ? 'text-emerald-600' : 'text-red-500'
                   const pct = (v: number | null | undefined, d = 0) => v == null ? '—' : `${(v * 100).toFixed(d)}%`
+                  const band = confidenceBand(r.s?.live_deflated_sharpe)
                   return (
                   <tr key={r.id} className={r.mine ? 'bg-[#C9A34E]/5' : ''}>
                     <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
-                    <td className="px-3 py-2"><span className="font-medium text-foreground">{r.name}</span> <span className="text-xs text-muted-foreground">{r.author}</span></td>
+                    <td className="px-3 py-2">
+                      <Link href={`/compete/sp500-nextday/model/${r.id}`} className="font-medium text-foreground hover:text-[#C9A34E] hover:underline underline-offset-4">{r.name}</Link>{' '}
+                      <span className="text-xs text-muted-foreground">{r.author}</span>
+                      {r.error && (
+                        <span className="ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium bg-red-500/10 text-red-600 align-middle"
+                              title={r.error}>not scoring</span>
+                      )}
+                    </td>
                     <td className={`px-3 py-2 text-right font-mono font-semibold border-l border-border ${provisional ? 'text-muted-foreground' : signed(liveSharpe)}`}
                         title={provisional ? `Provisional — ${liveDays}/${LIVE_MIN_DAYS} sessions; not ranked on yet` : undefined}>
                       {liveSharpe == null ? '—' : liveSharpe.toFixed(2)}{provisional && liveSharpe != null ? '*' : ''}
@@ -146,13 +160,20 @@ export default async function CompetitionOverview({ params }: { params: Promise<
                     <td className="px-3 py-2 text-right font-mono text-muted-foreground">{liveDays}</td>
                     <td className="px-3 py-2 text-right font-mono">{pct(r.s?.live_hit_rate)}</td>
                     <td className={`px-3 py-2 text-right font-mono ${signed(r.s?.live_cum_return)}`}>{pct(r.s?.live_cum_return, 1)}</td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap" title={`${band.hint}${r.s?.live_deflated_sharpe != null ? ` (deflated Sharpe ${r.s.live_deflated_sharpe.toFixed(2)})` : ''}`}>
+                      <span className={`text-xs font-medium ${
+                        band.tone === 'good' ? 'text-emerald-600' : band.tone === 'ok' ? 'text-amber-600'
+                        : band.tone === 'weak' ? 'text-muted-foreground' : band.tone === 'bad' ? 'text-red-500' : 'text-muted-foreground'}`}>
+                        {band.label}
+                      </span>
+                    </td>
                     <td className={`px-3 py-2 text-right font-mono border-l border-border ${signed(r.s?.sharpe)}`}>{r.s?.sharpe != null ? r.s.sharpe.toFixed(2) : '—'}</td>
                     <td className="px-3 py-2 text-right font-mono">{pct(r.s?.hit_rate)}</td>
                     <td className={`px-3 py-2 text-right font-mono ${signed(r.s?.cum_return)}`}>{pct(r.s?.cum_return, 1)}</td>
                   </tr>
                   )
                 })}
-                {rows.length === 0 && <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">No models yet.</td></tr>}
+                {rows.length === 0 && <tr><td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">No models yet.</td></tr>}
               </tbody>
             </table>
           </div>
