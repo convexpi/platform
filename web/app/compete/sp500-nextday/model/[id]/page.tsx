@@ -132,9 +132,15 @@ export default async function Sp500ModelPage({ params }: { params: Promise<{ id:
         <div className="grid sm:grid-cols-2 gap-4">
           <Panel title="Live · forward-only" rows={[
             ['Sharpe (net of costs)', num(s?.live_sharpe), signClass(s?.live_sharpe)],
+            ['Sharpe before costs', num(s?.live_gross_sharpe), signClass(s?.live_gross_sharpe)],
             ['Cumulative PnL', pct(s?.live_cum_return, 1), signClass(s?.live_cum_return)],
+            ['Given up to costs', pct(s?.live_cost_drag, 2), s?.live_cost_drag ? 'text-red-500' : ''],
             ['Hit rate', pct(s?.live_hit_rate, 0), ''],
-            ['vs buy & hold (info ratio)', num(s?.live_info_ratio), signClass(s?.live_info_ratio)],
+            // Suppressed for models that barely trade: a near-constant excess series makes the
+            // ratio about -1/sqrt(n-1) regardless of magnitude, which reads as a real signal.
+            ['vs buy & hold (info ratio)',
+              (s?.live_turnover ?? 0) < 0.02 ? 'n/a — barely trades' : num(s?.live_info_ratio),
+              (s?.live_turnover ?? 0) < 0.02 ? 'text-muted-foreground' : signClass(s?.live_info_ratio)],
             ['Turnover', s?.live_turnover != null ? `${(s.live_turnover * 100).toFixed(0)}% of sessions` : '—', ''],
             ['Sessions', String(s?.live_days ?? 0), ''],
           ]} />
@@ -144,6 +150,9 @@ export default async function Sp500ModelPage({ params }: { params: Promise<{ id:
             ['Cumulative PnL', pct(s?.cum_return, 1), signClass(s?.cum_return)],
             ['Given up to costs', pct(s?.cost_drag, 2), s?.cost_drag ? 'text-red-500' : ''],
             ['vs buy & hold', pct(s?.excess_return, 1), signClass(s?.excess_return)],
+            ['vs buy & hold (info ratio)',
+              (s?.turnover ?? 0) < 0.02 ? 'n/a — barely trades' : num(s?.info_ratio),
+              (s?.turnover ?? 0) < 0.02 ? 'text-muted-foreground' : signClass(s?.info_ratio)],
             ['Turnover', s?.turnover != null ? `${(s.turnover * 100).toFixed(0)}% of sessions` : '—', ''],
           ]} />
         </div>

@@ -38,6 +38,9 @@ export type Sp500Score = {
   live_info_ratio?: number | null
   live_turnover?: number | null
   live_deflated_sharpe?: number | null
+  // Added by 20260731_sp500_live_gross_sharpe.sql.
+  live_gross_sharpe?: number | null
+  live_cost_drag?: number | null
 }
 
 /**

@@ -153,9 +153,16 @@ export default async function CompetitionOverview({ params }: { params: Promise<
                               title={r.error}>not scoring</span>
                       )}
                     </td>
+                    {/* Net is the ranked figure; gross sits under it so the cost of trading is
+                        legible at a glance — the gap between them is what turnover costs. */}
                     <td className={`px-3 py-2 text-right font-mono font-semibold border-l border-border ${provisional ? 'text-muted-foreground' : signed(liveSharpe)}`}
                         title={provisional ? `Provisional — ${liveDays}/${LIVE_MIN_DAYS} sessions; not ranked on yet` : undefined}>
                       {liveSharpe == null ? '—' : liveSharpe.toFixed(2)}{provisional && liveSharpe != null ? '*' : ''}
+                      {r.s?.live_gross_sharpe != null && (
+                        <span className="block text-[10px] font-normal text-muted-foreground" title="Before turnover costs">
+                          {r.s.live_gross_sharpe.toFixed(2)} gross
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-muted-foreground">{liveDays}</td>
                     <td className="px-3 py-2 text-right font-mono">{pct(r.s?.live_hit_rate)}</td>
@@ -167,7 +174,14 @@ export default async function CompetitionOverview({ params }: { params: Promise<
                         {band.label}
                       </span>
                     </td>
-                    <td className={`px-3 py-2 text-right font-mono border-l border-border ${signed(r.s?.sharpe)}`}>{r.s?.sharpe != null ? r.s.sharpe.toFixed(2) : '—'}</td>
+                    <td className={`px-3 py-2 text-right font-mono border-l border-border ${signed(r.s?.sharpe)}`}>
+                      {r.s?.sharpe != null ? r.s.sharpe.toFixed(2) : '—'}
+                      {r.s?.gross_sharpe != null && (
+                        <span className="block text-[10px] text-muted-foreground" title="Before turnover costs">
+                          {r.s.gross_sharpe.toFixed(2)} gross
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-right font-mono">{pct(r.s?.hit_rate)}</td>
                     <td className={`px-3 py-2 text-right font-mono ${signed(r.s?.cum_return)}`}>{pct(r.s?.cum_return, 1)}</td>
                   </tr>
@@ -180,7 +194,9 @@ export default async function CompetitionOverview({ params }: { params: Promise<
           <p className="mt-2 text-xs text-muted-foreground">
             <span className="text-foreground">Live</span> = forward-only track since each model went active (the honest score; it grows daily).{' '}
             <span className="text-foreground">Backtest</span> = a rolling 252-day walk-forward over real prices, recomputed daily — a baseline that’s comparable from day one.{' '}
-            The two groups cover different windows, so read across a group, never across the divider.
+            The two groups cover different windows, so read across a group, never across the divider.{' '}
+            Sharpe is net of a 2bp round-trip cost charged on every position change, with the pre-cost
+            figure beneath it — the gap is what turnover costs, and ranking is on the net number.
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             <span className="font-mono">*</span> Provisional: fewer than {LIVE_MIN_DAYS} live sessions, so the model is ranked on its
