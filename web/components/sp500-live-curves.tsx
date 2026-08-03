@@ -18,6 +18,11 @@ export type Curve = {
   points: (number | null)[]
   /** Scale factor applied (target vol / realised vol) — surfaced so the leverage isn't hidden. */
   scale: number
+  /**
+   * Palette slot, from `colorSlots()`. Supplied by the caller and tied to model identity, so a
+   * series keeps its colour when the standings reorder. Falls back to array position if absent.
+   */
+  slot?: number
 }
 
 // Categorical slots 1–7, validated for adjacent-pair CVD separation on both surfaces.
@@ -58,6 +63,10 @@ export function Sp500LiveCurves({ dates, curves, targetVol }:
     return d.trim()
   }
 
+  // Resolve each series' palette slot once. `slot` is supplied by the caller and tied to model
+  // identity; the index fallback only applies when a caller hasn't assigned slots.
+  const series = curves.map((c, i) => ({ c, slot: (c.slot ?? i) % 7 }))
+  const bySlot = [...series].sort((a, b) => a.slot - b.slot)
   const hoverIdx = hover
   const fmt = (v: number) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`
 
@@ -93,17 +102,17 @@ export function Sp500LiveCurves({ dates, curves, targetVol }:
           <text x={PAD.l} y={H - 8} fontSize={10} fill="var(--axis-ink)">{dates[0]}</text>
           <text x={W - PAD.r} y={H - 8} fontSize={10} fill="var(--axis-ink)" textAnchor="end">{dates[dates.length - 1]}</text>
 
-          {curves.map((c, i) => (
-            <path key={c.id} d={path(c.points)} className={`s-line c${i % 7}${focus && focus !== c.id ? ' dim' : ''}`} />
+          {series.map(({ c, slot }) => (
+            <path key={c.id} d={path(c.points)} className={`s-line c${slot}${focus && focus !== c.id ? ' dim' : ''}`} />
           ))}
 
           {hoverIdx != null && (
             <>
               <line x1={x(hoverIdx)} x2={x(hoverIdx)} y1={PAD.t} y2={PAD.t + PH} stroke="var(--crosshair)" strokeWidth={1} />
-              {curves.map((c, i) => {
+              {series.map(({ c, slot }) => {
                 const v = c.points[hoverIdx]
                 return v == null ? null : (
-                  <circle key={c.id} cx={x(hoverIdx)} cy={y(v)} className={`s-dot f${i % 7}${focus && focus !== c.id ? ' dim' : ''}`} />
+                  <circle key={c.id} cx={x(hoverIdx)} cy={y(v)} className={`s-dot f${slot}${focus && focus !== c.id ? ' dim' : ''}`} />
                 )
               })}
             </>
@@ -119,9 +128,15 @@ export function Sp500LiveCurves({ dates, curves, targetVol }:
       </div>
 
       {/* Legend — identity is never colour alone; the name is text ink beside a swatch.
-          Doubles as the relief for the light-mode contrast warning on slots 3–5. */}
+          Doubles as the relief for the light-mode contrast warning on slots 3–5.
+
+          Ordered by palette slot, not by rank. The palette's colourblind separation is validated
+          on *adjacent* pairs in slot order; listing by rank puts arbitrary pairs side by side, and
+          the standings order happened to land orange beside magenta — ΔE 12.9, under the
+          normal-vision floor of 15. Slot order keeps the validated adjacency no matter how the
+          board moves. */}
       <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 list-none p-0 text-xs">
-        {curves.map((c, i) => {
+        {bySlot.map(({ c, slot }) => {
           const v = hoverIdx != null ? c.points[hoverIdx] : c.points.filter((p) => p != null).slice(-1)[0]
           return (
             <li key={c.id}>
@@ -129,7 +144,7 @@ export function Sp500LiveCurves({ dates, curves, targetVol }:
                       className={`flex items-center gap-1.5 cursor-default ${focus && focus !== c.id ? 'opacity-45' : ''}`}
                       onMouseEnter={() => setFocus(c.id)} onMouseLeave={() => setFocus(null)}
                       onFocus={() => setFocus(c.id)} onBlur={() => setFocus(null)}>
-                <svg aria-hidden width="12" height="3" className="shrink-0"><rect width="12" height="3" rx="1.5" className={`f${i % 7}`} /></svg>
+                <svg aria-hidden width="12" height="3" className="shrink-0"><rect width="12" height="3" rx="1.5" className={`f${slot}`} /></svg>
                 <span className="text-foreground">{c.name}</span>
                 <span className="font-mono text-muted-foreground">{v == null ? '—' : fmt(v)}</span>
               </button>

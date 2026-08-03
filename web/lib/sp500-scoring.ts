@@ -50,7 +50,14 @@ export type Sp500Score = {
  * field having been tried. Bands keep readers from over-reading a third decimal place on what is
  * fundamentally a "is this real?" question.
  */
-export function confidenceBand(dsr: number | null | undefined) {
+export function confidenceBand(dsr: number | null | undefined, liveDays?: number | null) {
+  // Below the ranking threshold, stay silent. Marking the Sharpe provisional and then printing a
+  // confident verdict computed from those same few sessions contradicts itself — and at 22 days
+  // every model reads "Likely luck", which says more about the sample than about any model.
+  if (liveDays != null && liveDays < LIVE_MIN_DAYS) {
+    return { label: 'too early', tone: 'muted',
+             hint: `Needs ${LIVE_MIN_DAYS} live sessions before the correction says anything; ${liveDays} so far.` }
+  }
   if (dsr == null) return { label: '—', tone: 'muted', hint: 'Not enough live history yet.' }
   if (dsr >= 0.95) return { label: 'Strong', tone: 'good', hint: 'Survives the multiple-testing correction.' }
   if (dsr >= 0.75) return { label: 'Promising', tone: 'ok', hint: 'Suggestive, not yet conclusive.' }
@@ -66,6 +73,21 @@ export function liveQualified(s: Pick<Sp500Score, 'live_days' | 'live_sharpe'> |
 /** Approximate standard error of an annualised Sharpe estimated from `days` daily observations. */
 export function liveSharpeStdError(days: number | null | undefined) {
   return days && days > 0 ? Math.sqrt(252 / days) : null
+}
+
+/**
+ * Stable chart-colour slot per model.
+ *
+ * Colour must identify the entity, never its position. Assigning slots by index into a *ranked*
+ * array repaints every series whenever the standings move — deepseek was orange one day and green
+ * the next purely by dropping one place, which makes the chart unreadable across visits.
+ *
+ * Slots are assigned in sorted-id order, so the mapping depends only on which models exist, not on
+ * how they are doing. Adding a model can shift slots after it in id order, which is the least-bad
+ * option with a fixed palette; nothing shifts merely because performance changed.
+ */
+export function colorSlots(ids: string[]): Map<string, number> {
+  return new Map([...ids].sort().map((id, i) => [id, i]))
 }
 
 /**

@@ -10,7 +10,7 @@ import { submitSp500Model } from '../sp500-actions'
 import { STARTERS, competitionKind } from '@/lib/starters'
 import { competitionSpec } from '@/lib/competition-spec'
 import { SpecHeader, SpecSection, SpecNav, CanonicalSpecSections, CANONICAL_NAV } from '@/components/competition-spec'
-import { LIVE_MIN_DAYS, compareSp500, confidenceBand, liveQualified, type Sp500Score } from '@/lib/sp500-scoring'
+import { LIVE_MIN_DAYS, colorSlots, compareSp500, confidenceBand, liveQualified, liveSharpeStdError, type Sp500Score } from '@/lib/sp500-scoring'
 import { Sp500LiveCurves, type Curve } from '@/components/sp500-live-curves'
 
 export const dynamic = 'force-dynamic'
@@ -102,6 +102,15 @@ export default async function CompetitionOverview({ params }: { params: Promise<
       }
       return [{ id: r.id, name: r.name, author: r.author, points, scale }]
     })
+    // Colour identifies the model, not its rank — assigned over the full active set so a series
+    // keeps its colour when the standings reorder.
+    const slots = colorSlots(rows.map((r) => r.id))
+    for (const c of curves) c.slot = slots.get(c.id)
+
+    // Standard error of an annualised Sharpe from the shortest live record on the board. Computed
+    // rather than hardcoded: it was written as "at 21 days" and was stale within a session.
+    const shortestLive = Math.min(...rows.map((r) => r.s?.live_days ?? 0).filter((d) => d > 0), Infinity)
+    const worstSe = Number.isFinite(shortestLive) ? liveSharpeStdError(shortestLive) : null
 
     const TEMPLATE = spec.submit.example
 
@@ -141,7 +150,7 @@ export default async function CompetitionOverview({ params }: { params: Promise<
                   const signed = (v: number | null | undefined) =>
                     v == null ? 'text-muted-foreground' : v >= 0 ? 'text-emerald-600' : 'text-red-500'
                   const pct = (v: number | null | undefined, d = 0) => v == null ? '—' : `${(v * 100).toFixed(d)}%`
-                  const band = confidenceBand(r.s?.live_deflated_sharpe)
+                  const band = confidenceBand(r.s?.live_deflated_sharpe, r.s?.live_days)
                   return (
                   <tr key={r.id} className={r.mine ? 'bg-[#C9A34E]/5' : ''}>
                     <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
@@ -201,8 +210,12 @@ export default async function CompetitionOverview({ params }: { params: Promise<
           <p className="mt-1 text-xs text-muted-foreground">
             <span className="font-mono">*</span> Provisional: fewer than {LIVE_MIN_DAYS} live sessions, so the model is ranked on its
             backtest for now. An annualised Sharpe from <span className="font-mono">n</span> days carries a standard error of about{' '}
-            <span className="font-mono">√(252/n)</span> — at 21 days that’s ±3.5, wide enough that most of this board is
-            indistinguishable from zero.
+            <span className="font-mono">√(252/n)</span>
+            {worstSe != null && shortestLive > 0
+              ? <> — at {shortestLive} session{shortestLive === 1 ? '' : 's'} that’s ±{worstSe.toFixed(1)}, wide enough that most of
+                  this board is indistinguishable from zero</>
+              : null}. The confidence column stays quiet until a model clears {LIVE_MIN_DAYS} sessions, since a verdict drawn
+            from the same short record would only restate the sample size.
           </p>
           {curves.length > 0 && (
             <div className="mt-8">

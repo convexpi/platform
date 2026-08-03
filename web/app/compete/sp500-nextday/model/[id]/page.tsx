@@ -57,7 +57,7 @@ export default async function Sp500ModelPage({ params }: { params: Promise<{ id:
     })
   }
 
-  const band = confidenceBand(s?.live_deflated_sharpe)
+  const band = confidenceBand(s?.live_deflated_sharpe, s?.live_days)
   const se = liveSharpeStdError(s?.live_days)
   const provisional = !liveQualified(s)
 
