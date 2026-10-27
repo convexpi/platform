@@ -41,7 +41,9 @@ jobs:
 
   e2e:
     name: Playwright smoke tests
-    runs-on: ubuntu-latest
+    # Playwright 1.60 doesn't ship Chromium support for the Ubuntu 26 image that
+    # ubuntu-latest moved to. Pin the current supported LTS until Playwright does.
+    runs-on: ubuntu-24.04
     needs: web
 
     steps:
