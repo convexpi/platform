@@ -86,7 +86,7 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
 
   // Rerun audit 600ms after the user stops typing (Python-only — the auditor parses Python).
   useEffect(() => {
-    if (language !== 'python') { setAudit(null); return }
+    if (language !== 'python') return
     const id = setTimeout(() => setAudit(auditStrategy(code)), 600)
     return () => clearTimeout(id)
   }, [code, language])
@@ -94,6 +94,7 @@ export function SubmitForm({ cohortId, cohortSlug, cohortType, pastSubmissions }
   // Swap the starter when the language changes (only if the editor still holds a starter).
   function changeLanguage(lang: string) {
     setLanguage(lang)
+    if (lang !== 'python') setAudit(null)
     if (Object.values(STARTERS).includes(code)) setCode(STARTERS[lang])
   }
 

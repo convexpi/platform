@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useMemo, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useMemo } from 'react'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -126,18 +125,25 @@ function FilterPill({
 
 type SortKey = 'oos_sharpe' | 'is_sharpe' | 'decay_pct' | 'pub_year' | 'name'
 
-export function AnomalyList({ anomalies }: { anomalies: Anomaly[] }) {
-  const searchParams = useSearchParams()
+function SortArrow({ col, active, direction }: {
+  col: SortKey
+  active: SortKey
+  direction: 'asc' | 'desc'
+}) {
+  if (active !== col) return <span className="text-muted-foreground/40 ml-0.5">↕</span>
+  return <span className="ml-0.5">{direction === 'desc' ? '↓' : '↑'}</span>
+}
+
+export function AnomalyList({ anomalies, initialCategory = 'all' }: {
+  anomalies: Anomaly[]
+  initialCategory?: string
+}) {
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [catFilter,    setCatFilter]    = useState<string>(() => searchParams.get('cat') ?? 'all')
+  const [catFilter,    setCatFilter]    = useState<string>(initialCategory)
   const [sourceFilter, setSourceFilter] = useState<string>('all')
   const [decadeFilter, setDecadeFilter] = useState<string>('all')
   const [search, setSearch]             = useState<string>('')
 
-  useEffect(() => {
-    const cat = searchParams.get('cat')
-    if (cat) setCatFilter(cat)
-  }, [searchParams])
   const [sortKey, setSortKey]           = useState<SortKey>('oos_sharpe')
   const [sortDir, setSortDir]           = useState<'asc' | 'desc'>('desc')
 
@@ -191,11 +197,6 @@ export function AnomalyList({ anomalies }: { anomalies: Anomaly[] }) {
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortKey(key); setSortDir('desc') }
-  }
-
-  function SortArrow({ col }: { col: SortKey }) {
-    if (sortKey !== col) return <span className="text-muted-foreground/40 ml-0.5">↕</span>
-    return <span className="ml-0.5">{sortDir === 'desc' ? '↓' : '↑'}</span>
   }
 
   // Counts
@@ -291,7 +292,7 @@ export function AnomalyList({ anomalies }: { anomalies: Anomaly[] }) {
                 className="text-left px-3 py-2 font-medium cursor-pointer hover:text-foreground"
                 onClick={() => handleSort('name')}
               >
-                Name <SortArrow col="name" />
+                Name <SortArrow col="name" active={sortKey} direction={sortDir} />
               </th>
               <th className="text-left px-3 py-2 font-medium">Category</th>
               <th className="text-left px-3 py-2 font-medium">Journal</th>
@@ -299,26 +300,26 @@ export function AnomalyList({ anomalies }: { anomalies: Anomaly[] }) {
                 className="text-right px-3 py-2 font-medium cursor-pointer hover:text-foreground"
                 onClick={() => handleSort('pub_year')}
               >
-                Year <SortArrow col="pub_year" />
+                Year <SortArrow col="pub_year" active={sortKey} direction={sortDir} />
               </th>
               <th className="text-center px-3 py-2 font-medium">Status</th>
               <th
                 className="text-right px-3 py-2 font-medium cursor-pointer hover:text-foreground"
                 onClick={() => handleSort('is_sharpe')}
               >
-                IS Sh. <SortArrow col="is_sharpe" />
+                IS Sh. <SortArrow col="is_sharpe" active={sortKey} direction={sortDir} />
               </th>
               <th
                 className="text-right px-3 py-2 font-medium cursor-pointer hover:text-foreground"
                 onClick={() => handleSort('oos_sharpe')}
               >
-                OOS Sh. <SortArrow col="oos_sharpe" />
+                OOS Sh. <SortArrow col="oos_sharpe" active={sortKey} direction={sortDir} />
               </th>
               <th
                 className="text-right px-3 py-2 font-medium cursor-pointer hover:text-foreground"
                 onClick={() => handleSort('decay_pct')}
               >
-                Decay <SortArrow col="decay_pct" />
+                Decay <SortArrow col="decay_pct" active={sortKey} direction={sortDir} />
               </th>
             </tr>
           </thead>

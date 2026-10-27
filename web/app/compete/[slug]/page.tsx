@@ -9,6 +9,7 @@ import { ArenaBook } from '@/components/arena-book'
 import { submitSp500Model } from '../sp500-actions'
 import { STARTERS, competitionKind } from '@/lib/starters'
 import { competitionSpec } from '@/lib/competition-spec'
+import { arenaConnectUrl } from '@/lib/arena-url'
 import { SpecHeader, SpecSection, SpecNav, CanonicalSpecSections, CANONICAL_NAV } from '@/components/competition-spec'
 import { LIVE_MIN_DAYS, colorSlots, compareSp500, confidenceBand, liveQualified, liveSharpeStdError, type Sp500Score } from '@/lib/sp500-scoring'
 import { Sp500LiveCurves, type Curve } from '@/components/sp500-live-curves'
@@ -254,11 +255,7 @@ export default async function CompetitionOverview({ params }: { params: Promise<
   // Arena — live trading against a limit-order book
   // ---------------------------------------------------------------------------
   if (isArena) {
-    const arenaUrl =
-      (typeof arenaConfig.ws_url === 'string' ? arenaConfig.ws_url : '') ||
-      (slug === 'arena-book' ? (process.env.NEXT_PUBLIC_ARENA_BOOK_URL ?? '') : '') ||
-      (slug === 'arena-l3' ? (process.env.NEXT_PUBLIC_ARENA_L3_URL ?? '') : '') ||
-      (slug === 'arena-open' ? (process.env.NEXT_PUBLIC_ARENA_URL ?? '') : '')
+    const arenaUrl = arenaConnectUrl(cohort)
     return (
       <div className="container mx-auto px-4 py-10 max-w-3xl">
         {back}

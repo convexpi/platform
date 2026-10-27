@@ -10,7 +10,8 @@ import { render, screen, fireEvent } from '@testing-library/react'
 // ---------------------------------------------------------------------------
 
 const mockGetUser = vi.fn()
-const mockOnAuthStateChange = vi.fn(() => ({
+type AuthCallback = (event: string, session: { user: { id: string } } | null) => void
+const mockOnAuthStateChange = vi.fn((_callback?: AuthCallback) => ({
   data: { subscription: { unsubscribe: vi.fn() } },
 }))
 const mockSignOut = vi.fn(() => Promise.resolve({}))
@@ -98,11 +99,11 @@ describe('Nav', () => {
 
   it('shows Sign out when authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.com' } } })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockOnAuthStateChange.mockImplementation(((cb: any) => {
+    mockOnAuthStateChange.mockImplementation((cb?: AuthCallback) => {
+      if (!cb) throw new Error('auth callback is required')
       cb('SIGNED_IN', { user: { id: 'u1' } })
       return { data: { subscription: { unsubscribe: vi.fn() } } }
-    }) as any)
+    })
     render(<Nav />)
     // Sign out now lives in the account menu (desktop avatar) and the mobile drawer.
     // Open the drawer to assert the authenticated sign-out affordance is reachable.

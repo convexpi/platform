@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useTransition } from 'react'
+import { useState, useEffect, useRef, useTransition, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -49,23 +49,25 @@ export function NotificationBell() {
   const [unread, setUnread] = useState(0)
   const [, startTransition] = useTransition()
   const ref = useRef<HTMLDivElement>(null)
-  const supabase = createClient()
+  const [supabase] = useState(createClient)
 
-  async function fetchNotifications() {
+  const fetchNotifications = useCallback(async () => {
     const res = await fetch('/api/notifications')
     if (!res.ok) return
     const data = await res.json()
     setNotifications(data.notifications ?? [])
     setUnread(data.unread ?? 0)
-  }
+  }, [])
 
   useEffect(() => {
-    fetchNotifications()
+    const initialFetch = window.setTimeout(() => { void fetchNotifications() }, 0)
+    let notificationChannel: ReturnType<typeof supabase.channel> | null = null
 
     // Realtime: listen for new notifications
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       if (!session?.user) return
-      const channel = supabase
+      if (notificationChannel) void supabase.removeChannel(notificationChannel)
+      notificationChannel = supabase
         .channel('notifications')
         .on('postgres_changes', {
           event: 'INSERT',
@@ -74,10 +76,13 @@ export function NotificationBell() {
           filter: `user_id=eq.${session.user.id}`,
         }, () => fetchNotifications())
         .subscribe()
-      return () => { supabase.removeChannel(channel) }
     })
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      window.clearTimeout(initialFetch)
+      subscription.unsubscribe()
+      if (notificationChannel) void supabase.removeChannel(notificationChannel)
+    }
+  }, [fetchNotifications, supabase])
 
   // Close on outside click
   useEffect(() => {

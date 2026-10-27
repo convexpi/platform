@@ -2,6 +2,7 @@
 // first-time visitor always knows where to look: what you submit, how you're scored, the data,
 // the timeline/rules. Content varies by kind (Lab / Forecast / Arena); structure does not.
 import { competitionKind, type CompetitionKind } from '@/lib/starters'
+import { arenaConnectUrl } from '@/lib/arena-url'
 
 export type SpecFact = { label: string; value: string }
 export type SpecField = { name: string; desc: string }
@@ -30,7 +31,16 @@ export type CompetitionSpec = {
 export function competitionSpec(cohort: { slug: string; arena_config?: unknown }): CompetitionSpec {
   const kind = competitionKind(cohort)
   if (kind === 'Forecast') return FORECAST
-  if (kind === 'Arena') return ARENA
+  if (kind === 'Arena') {
+    const endpoint = arenaConnectUrl(cohort) ?? '<arena WebSocket URL>'
+    return {
+      ...ARENA,
+      submit: {
+        ...ARENA.submit,
+        example: ARENA.submit.example.replace('<arena WebSocket URL>', endpoint),
+      },
+    }
+  }
   return LAB
 }
 
@@ -40,7 +50,7 @@ const LAB: CompetitionSpec = {
   facts: [
     { label: 'Metric', value: 'Out-of-sample Sharpe' },
     { label: 'Data', value: 'Synthetic equity panel' },
-    { label: 'Cadence', value: 'Always open · graded < 5 min' },
+    { label: 'Cadence', value: 'Always open · usually graded in ~5 min' },
     { label: 'Level', value: 'Beginner' },
   ],
   submit: {
@@ -112,7 +122,7 @@ class MyStrategy(Strategy):
   ],
   timeline: [
     'Always open — submit any time; no entry deadline.',
-    'Graded in under 5 minutes; your OOS Sharpe posts to the leaderboard automatically.',
+    'Usually graded within about 5 minutes; your OOS Sharpe posts to the leaderboard automatically.',
     'Re-scored nightly on fresh synthetic data (the forward Sharpe).',
   ],
   rules: [
@@ -225,7 +235,7 @@ class MyAgent(RemoteAgent):
             return [self.limit("buy", round(state.mid) - 5, 10)]
         return []
 
-MyAgent("your-handle", server="wss://…").run()`,
+MyAgent("your-handle", server="<arena WebSocket URL>").start()`,
     note: 'state carries the mid, the order book, and your position/PnL. Return limit/market orders or cancels each tick.',
   },
   scoring: {

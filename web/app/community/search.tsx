@@ -1,17 +1,12 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useTransition, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useTransition, useState } from 'react'
 
 export function CommunitySearch({ initialQuery }: { initialQuery: string }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
   const [value, setValue] = useState(initialQuery)
-
-  useEffect(() => {
-    setValue(searchParams.get('q') ?? '')
-  }, [searchParams])
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const v = e.target.value

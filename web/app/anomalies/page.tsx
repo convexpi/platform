@@ -24,7 +24,12 @@ function loadStats(): StatsFile {
   }
 }
 
-export default function AnomalyGraveyardPage() {
+export default async function AnomalyGraveyardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cat?: string }>
+}) {
+  const { cat } = await searchParams
   const data = loadStats()
   const { updated_at } = data
   // Strip monthly_returns — they're only needed on individual factor pages, not the table.
@@ -110,7 +115,7 @@ export default function AnomalyGraveyardPage() {
 
       {/* Interactive anomaly list */}
       <Suspense fallback={<div className="py-8 text-sm text-muted-foreground text-center">Loading…</div>}>
-        <AnomalyList anomalies={anomalies} />
+        <AnomalyList key={cat ?? 'all'} anomalies={anomalies} initialCategory={cat ?? 'all'} />
       </Suspense>
 
       {/* Footer */}

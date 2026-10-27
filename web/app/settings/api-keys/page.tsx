@@ -33,7 +33,20 @@ export default function ApiKeysPage() {
     setKeys(d.keys ?? [])
     setLoading(false)
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    let active = true
+    fetch('/api/keys').then(async (res) => {
+      const data = await res.json()
+      if (!active) return
+      if (res.status === 401) {
+        setError('Please sign in to manage API keys.')
+      } else {
+        setKeys(data.keys ?? [])
+      }
+      setLoading(false)
+    })
+    return () => { active = false }
+  }, [])
 
   async function createKey(e: React.FormEvent) {
     e.preventDefault()

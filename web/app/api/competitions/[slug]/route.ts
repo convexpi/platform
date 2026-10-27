@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { competitionSpec } from '@/lib/competition-spec'
+import { arenaConnectUrl } from '@/lib/arena-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,12 +11,19 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const db = createAdminClient()
-  const { data: c } = await db
+  const { data: c, error } = await db
     .from('cohorts')
     .select('slug, name, description, status, arena_config, market_config')
     .eq('slug', slug)
     .eq('type', 'competition')
     .maybeSingle()
+
+  if (error) {
+    return NextResponse.json(
+      { error: 'Competition details are temporarily unavailable. Please retry shortly.' },
+      { status: 503, headers: { 'Retry-After': '30', 'Cache-Control': 'no-store' } },
+    )
+  }
 
   if (!c) return NextResponse.json({ error: `Unknown competition slug: ${slug}` }, { status: 404 })
 
@@ -37,9 +45,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       errors: '400 missing/oversized/invalid code · 401 bad key · 403 key lacks "submit" scope · 404 unknown slug · 409 duplicate code (change before resubmitting) · 429 rate-limited',
     }
   } else if (spec.kind === 'Arena') {
+    const endpoint = arenaConnectUrl(c)
     submitChannel = {
       method: 'WebSocket',
-      note: 'Not a file submission — connect a convexpi-arena RemoteAgent to the live book (see the contract/example) and trade in real time. Your PnL appears on the rankings.',
+      endpoint,
+      available: Boolean(endpoint),
+      install: 'pip install convexpi-arena[server]',
+      handshake: { type: 'join', agent_id: 'your-handle' },
+      note: endpoint
+        ? 'Connect a convexpi-arena RemoteAgent to this endpoint and trade in real time. The client automatically reconnects after a sleeping arena wakes.'
+        : 'This arena does not currently advertise a live endpoint. Check the human page for its opening status.',
     }
   } else {
     submitChannel = {
@@ -57,7 +72,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     spec.kind === 'Lab'
       ? {
           package: 'pip install convexpi-lab',
-          load: 'from convexpi.lab import SyntheticMarket\nm = SyntheticMarket(seed=42)              # same panel the grader uses (deterministic)\nX = m.features("train"); px = m.prices("train")   # fit on these\nXt = m.features("test"); pt = m.prices("test")     # self-validate out-of-sample here',
+          load: 'from convexpi.lab import SyntheticMarket\nm = SyntheticMarket(seed=42)              # representative deterministic training panel\nX = m.features("train"); px = m.prices("train")   # fit on these\nXt = m.features("test"); pt = m.prices("test")     # self-validate on this local holdout; grading uses a separate hidden panel',
           score_locally: 'from convexpi.lab import Grader   # score your Strategy locally before submitting',
           submit_helper: 'from convexpi.lab import submit   # convenience wrapper over the REST API',
         }
@@ -65,31 +80,34 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
         ? { note: 'The starter notebook pulls the real S&P 500 history (e.g. via yfinance) to backtest predict(history) the way it is scored.' }
         : { note: 'Connect the convexpi-arena starter agent to observe the live book state.' }
 
-  return NextResponse.json({
-    slug: c.slug,
-    name: c.name,
-    description: c.description,
-    status: c.status,
-    kind: spec.kind,
-    facts: spec.facts,
-    what_you_submit: {
-      contract: spec.submit.prose,
-      example: spec.submit.example,
-      note: spec.submit.note,
-      checklist: spec.checklist,
+  return NextResponse.json(
+    {
+      slug: c.slug,
+      name: c.name,
+      description: c.description,
+      status: c.status,
+      kind: spec.kind,
+      facts: spec.facts,
+      what_you_submit: {
+        contract: spec.submit.prose,
+        example: spec.submit.example,
+        note: spec.submit.note,
+        checklist: spec.checklist,
+      },
+      how_to_submit: submitChannel,
+      scoring: {
+        metric: spec.scoring.metric,
+        definition: spec.scoring.definition,
+        public_score: { label: spec.scoring.publicLabel, note: spec.scoring.public },
+        private_score: { label: spec.scoring.privateLabel, note: spec.scoring.private },
+        score_guide: spec.scoreGuide ?? null,
+      },
+      data: { summary: dataSummary, fields: spec.data.fields ?? null, how_to_load: spec.data.howToLoad, access: dataAccess },
+      approaches: spec.approaches,
+      timeline: spec.timeline,
+      rules: spec.rules,
+      human_page: `https://www.convexpi.ai/compete/${c.slug}`,
     },
-    how_to_submit: submitChannel,
-    scoring: {
-      metric: spec.scoring.metric,
-      definition: spec.scoring.definition,
-      public_score: { label: spec.scoring.publicLabel, note: spec.scoring.public },
-      private_score: { label: spec.scoring.privateLabel, note: spec.scoring.private },
-      score_guide: spec.scoreGuide ?? null,
-    },
-    data: { summary: dataSummary, fields: spec.data.fields ?? null, how_to_load: spec.data.howToLoad, access: dataAccess },
-    approaches: spec.approaches,
-    timeline: spec.timeline,
-    rules: spec.rules,
-    human_page: `https://www.convexpi.ai/compete/${c.slug}`,
-  })
+    { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } },
+  )
 }

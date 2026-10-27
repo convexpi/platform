@@ -126,7 +126,7 @@ export default function SdksPage() {
       <p className="text-sm text-muted-foreground leading-relaxed mb-3 max-w-2xl">
         The same three languages trade the live limit-order book. Your agent is a function
         <code className="bg-muted px-1 rounded mx-1">on_tick(state)</code> returning orders; in Python
-        it's a <code className="bg-muted px-1 rounded mx-1">RemoteAgent</code> subclass, in R and Julia
+        it&apos;s a <code className="bg-muted px-1 rounded mx-1">RemoteAgent</code> subclass, in R and Julia
         a function passed to <code className="bg-muted px-1 rounded mx-1">run_agent()</code>.
       </p>
       <Code>{`# R

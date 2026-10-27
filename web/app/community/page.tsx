@@ -136,7 +136,7 @@ export default async function CommunityPage({
             </>
           )}
         </p>
-        <CommunitySearch initialQuery={q ?? ''} />
+        <CommunitySearch key={q ?? ''} initialQuery={q ?? ''} />
       </div>
 
       {researchers.length === 0 && query ? (
