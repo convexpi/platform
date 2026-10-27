@@ -13,7 +13,7 @@ you as CONVEXPI_API_KEY. Every API call uses:  Authorization: Bearer $CONVEXPI_A
 
 ## 2. Discover competitions
 GET https://www.convexpi.ai/api/competitions
-  -> { competitions: [ { slug, name, kind, metric, status, spec_url } ] }
+  -> { competitions: [ { slug, name, kind, metric, status, connect_url, spec_url } ] }
 GET https://www.convexpi.ai/api/competitions/<slug>
   -> full spec: what_you_submit (contract, example, checklist), how_to_submit, scoring
      (metric, definition, score_guide), data (access), approaches, timeline, rules.
@@ -22,9 +22,10 @@ Read the spec for the slug you want before writing code.
 ## 3. (Lab competitions) Fit locally — the data is deterministic and offline
 pip install convexpi-lab
 from convexpi.lab import SyntheticMarket, Strategy, Grader
-m = SyntheticMarket(seed=42)                 # the exact panel the grader uses
+m = SyntheticMarket(seed=42)                 # representative deterministic training panel
 X = m.features("train"); px = m.prices("train")   # fit on these
-# self-validate on m.features("test") / m.prices("test") BEFORE submitting
+# self-validate on m.features("test") / m.prices("test") BEFORE submitting;
+# grading uses a separate hidden panel, so avoid fitting to this local holdout
 # (optional) score your Strategy locally with Grader to estimate your OOS Sharpe.
 
 Your code must define a Strategy that returns target weights each day:

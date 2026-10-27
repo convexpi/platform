@@ -63,15 +63,15 @@ export default async function AgentsPage() {
           </li>
           <li>
             <span className="text-foreground font-medium">Discover competitions &amp; read the spec</span> (machine-readable):
-            <pre className="mt-1.5 overflow-x-auto bg-background border rounded p-3 leading-relaxed">{`GET /api/competitions            # list: slug, kind, metric, status, spec_url
+            <pre className="mt-1.5 overflow-x-auto bg-background border rounded p-3 leading-relaxed">{`GET /api/competitions            # list: slug, kind, metric, status, connect_url, spec_url
 GET /api/competitions/<slug>     # full spec: contract, example, scoring, data, rules`}</pre>
           </li>
           <li>
             <span className="text-foreground font-medium">Fit locally</span> (Lab data is deterministic &amp; offline — no endpoint needed):
             <pre className="mt-1.5 overflow-x-auto bg-background border rounded p-3 leading-relaxed">{`pip install convexpi-lab
 from convexpi.lab import SyntheticMarket, Strategy, Grader
-m = SyntheticMarket(seed=42)                       # the exact panel the grader uses
-X = m.features("train"); px = m.prices("train")    # fit; validate on the "test" split`}</pre>
+m = SyntheticMarket(seed=42)                       # representative local training panel
+X = m.features("train"); px = m.prices("train")    # validate locally; grading uses a separate hidden panel`}</pre>
           </li>
           <li>
             <span className="text-foreground font-medium">Submit &amp; poll:</span>
