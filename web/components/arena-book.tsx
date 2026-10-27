@@ -27,26 +27,50 @@ const usd = (cents: number | null | undefined) =>
 
 export function ArenaBook({ url, levels = 8 }: { url: string; levels?: number }) {
   const [m, setM] = useState<MarketMsg | null>(null)
-  const [status, setStatus] = useState<'connecting' | 'live' | 'closed'>('connecting')
+  const [status, setStatus] = useState<'connecting' | 'live' | 'retrying'>('connecting')
   const wsRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
     let stop = false
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStatus('connecting')
-    const ws = new WebSocket(url)
-    wsRef.current = ws
-    ws.onopen = () => ws.send(JSON.stringify({ type: 'observe' }))
-    ws.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data)
-        if (msg.type === 'welcome') setStatus('live')
-        else if (msg.type === 'market') setM(msg as MarketMsg)
-      } catch { /* ignore */ }
+    let attempt = 0
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined
+
+    function connect() {
+      if (stop) return
+      setStatus(attempt === 0 ? 'connecting' : 'retrying')
+      const ws = new WebSocket(url)
+      wsRef.current = ws
+      ws.onopen = () => {
+        attempt = 0
+        ws.send(JSON.stringify({ type: 'observe' }))
+      }
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data)
+          if (msg.type === 'welcome') setStatus('live')
+          else if (msg.type === 'market') setM(msg as MarketMsg)
+        } catch { /* ignore malformed frames */ }
+      }
+      ws.onerror = () => {
+        if (!stop) setStatus('retrying')
+      }
+      ws.onclose = () => {
+        if (stop) return
+        setStatus('retrying')
+        const delay = Math.min(1_000 * 2 ** attempt, 10_000)
+        attempt += 1
+        reconnectTimer = setTimeout(connect, delay)
+      }
     }
-    ws.onerror = () => !stop && setStatus('closed')
-    ws.onclose = () => !stop && setStatus('closed')
-    return () => { stop = true; ws.close() }
+
+    // Defer the first connection so this effect only synchronizes with the external socket;
+    // subsequent state updates happen from socket/timer callbacks rather than during the effect.
+    reconnectTimer = setTimeout(connect, 0)
+    return () => {
+      stop = true
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      wsRef.current?.close()
+    }
   }, [url])
 
   const asks = (m?.depth.asks ?? []).slice(0, levels)
@@ -54,7 +78,7 @@ export function ArenaBook({ url, levels = 8 }: { url: string; levels?: number })
   const maxSize = Math.max(1, ...asks.map(l => l[1]), ...bids.map(l => l[1]))
   const spread = m?.best_bid != null && m?.best_ask != null ? m.best_ask - m.best_bid : null
 
-  const dot = status === 'live' ? 'bg-emerald-500' : status === 'connecting' ? 'bg-amber-500' : 'bg-red-500'
+  const dot = status === 'live' ? 'bg-emerald-500' : 'bg-amber-500'
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -71,7 +95,7 @@ export function ArenaBook({ url, levels = 8 }: { url: string; levels?: number })
 
       {!m ? (
         <div className="px-4 py-10 text-center text-sm text-muted-foreground">
-          {status === 'closed' ? 'Disconnected — is an Arena server running at this URL?' : 'Waiting for the first tick…'}
+          {status === 'retrying' ? 'Arena waking — reconnecting automatically…' : 'Waiting for the first tick…'}
         </div>
       ) : (
         <div className="grid md:grid-cols-[1.2fr_1fr]">
