@@ -128,11 +128,12 @@ POST /api/submissions (Next.js route)
         │  inserts row, status = 'pending'
         ▼
 Supabase: submissions table
-        │  grader worker polls every 5 seconds
+        │  Railway starts the grader every 5 minutes; it drains pending work and exits
         ▼
 Railway: grader_worker.py
   1. Pull submission code
-  2. Run in Docker sandbox (no network, memory-limited)
+  2. Run in a credential-free, resource-limited subprocess
+     (Docker adds network/filesystem isolation when configured)
   3. Evaluate on IS window (student can see this period)
   4. Evaluate on hidden OOS window (MARKET_SEED determines dates)
   5. Write grade_reports row: is_sharpe, oos_sharpe, overfitting_ratio
@@ -533,7 +534,7 @@ student can replicate results without institutional data subscriptions.
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (public) |
-| `SUPABASE_SERVICE_KEY` | Supabase service role key (server-only) |
+| `SUPABASE_SERVICE_KEY` | Supabase secret key (server-only; legacy name retained for compatibility) |
 | `ADMIN_USER_IDS` | Comma-separated Supabase UUIDs for admin panel access |
 | `SENTRY_DSN` | Sentry error tracking |
 | `SENTRY_PROJECT` | `convexpi-web` |

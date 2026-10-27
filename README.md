@@ -8,7 +8,7 @@ Built with Next.js, Supabase, and Vercel. Requires [convexpi-lab](https://github
 
 - **Frontend**: Next.js 15 (App Router), Tailwind CSS, shadcn/ui
 - **Backend**: Supabase (Postgres + Auth + Realtime)
-- **Grader**: Python worker in `convexpi-lab` — polls Supabase, grades submissions in Docker sandbox
+- **Grader**: Python Railway cron in `convexpi-lab` — drains pending submissions every five minutes
 - **Deploy**: Vercel (web) + Railway (grader worker)
 
 ## Local development
